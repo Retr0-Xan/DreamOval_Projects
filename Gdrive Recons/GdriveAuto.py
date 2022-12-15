@@ -17,14 +17,16 @@ month = int(input("Recons month: "))
 year = "20" + input("Recons year: ")
 basePath = Register[name] + "/Recons"
 month_abbr = calendar.month_abbr[month]
+full_day = "_"+day+"_"+month_abbr+"_"+year[-2:]
 
+print(full_day)
 reconsPath  = str(basePath) + "/" + str(year) + "/" + str(month_abbr.upper()) + "/" + "Recons_" + month_abbr + " " + day
 print(f"Recons day is {day}/{month}/{year}")
 files = os.listdir(reconsPath)
 
 def get_column(keyword):
-    for i in range(1, 10):
-        for j in range(1, 40):
+    for i in range(first_row, last_row):
+        for j in range(first_col, last_col):
             if sheet[str(get_column_letter(j)) + str(i)].value == keyword:
                 return(get_column_letter(j))
 
@@ -48,11 +50,11 @@ except:
     files= os.listdir(mtnKRCollectionsPath)
 
 print(files)
-wb = load_workbook(mtnKRCollectionsPath + '/MTN KR Debit Metabase_12_Dec_22.xlsx')
+wb = load_workbook(mtnKRCollectionsPath + '/MTN KR Debit Metabase'+full_day+'.xlsx')
 ws1 = wb.create_sheet("Duplicates")
 ws1.title = 'Duplicates'
 sheet = wb[wb.sheetnames[0]]
-file = pd.read_excel(mtnKRCollectionsPath + '/MTN KR Debit Metabase_12_Dec_22.xlsx')
+file = pd.read_excel(mtnKRCollectionsPath + '/MTN KR Debit Metabase'+full_day+'.xlsx')
 match_INT = 'MTN KR Debit Metabase_12_Dec_22.xlsx'
 
 # DEFINE MAX AND MIN COLUMNS AND ROWS
@@ -76,51 +78,53 @@ print('MTN_KR_Debit_KR_Sum: ' + str(MTN_KR_Debit_INT_Sum))
 INT_VALUE15 = MTN_KR_Debit_INT_Sum
 wb.close()
 # # ---------------------------------------- DUPLICATES -------------------------------------------------
-# list = []
-# duplicate = []
-# count = 1
-# counter = 0
-# duplicates_value_sum = 0.00
-# for id in range(first_row+1, last_row+1):
-#     if sheet[int_id_col+str(id)].value not in list:
-#         list.append(sheet[int_id_col+str(id)].value)
-#     else:
-#         data = file[file['IntegratorTransId'] == (sheet[int_id_col+str(id)].value)]
-#         duplicate.append((sheet[int_id_col+str(id)].value))
-#         with pd.ExcelWriter('MTN KR Debit Metabase'+yesterday+'.xlsx', mode='a', engine="openpyxl", if_sheet_exists='overlay') as writer:
-#             data.to_excel(writer, sheet_name='Duplicates', startrow=count)
-#             count += 3
-# wb.close()
-# # wb.save('MTN KR Debit Metabase'+yesterday+'.xlsx')
+list = []
+duplicate = []
+count = 1
+counter = 0
+duplicates_value_sum = 0.00
+for id in range(first_row+1, last_row+1):
+    if sheet[int_id_col+str(id)].value not in list:
+        list.append(sheet[int_id_col+str(id)].value)
+    else:
+        data = file[file['IntegratorTransId'] == (sheet[int_id_col+str(id)].value)]
+        duplicate.append((sheet[int_id_col+str(id)].value))
+        with pd.ExcelWriter(mtnKRCollectionsPath + '/MTN KR Debit Metabase'+full_day+'.xlsx', mode='a', engine="openpyxl", if_sheet_exists='overlay') as writer:
+            data.to_excel(writer, sheet_name='Duplicates', startrow=count)
+            count += 3
+wb.close()
 
-# wb = load_workbook(mtnKRCollectionsPath + '/MTN KR Debit Metabase_12_Dec_22.xlsx')
-# wb.active = wb['Duplicates']
-# dup_sheet = wb['Duplicates']
-
-
-# first_col = wb.active.min_column
-# last_col = wb.active.max_column
-# first_row = wb.active.min_row
-# last_row = wb.active.max_row
+wb = load_workbook(mtnKRCollectionsPath + '/MTN KR Debit Metabase'+full_day+'.xlsx')
+wb.active = wb['Duplicates']
+dup_sheet = wb['Duplicates']
 
 
-# dup_col = column_index_from_string(amountColumn) + 1
-# for number in range(first_row+2, last_row+1, 3):
-#     duplicates_value_sum = duplicates_value_sum + dup_sheet[str(get_column_letter(dup_col))+str(number)].value
-#     count += 3
-#     counter += 1
+first_col = wb.active.min_column
+last_col = wb.active.max_column
+first_row = wb.active.min_row
+last_row = wb.active.max_row
 
 
-# print(f"Number of duplicates: {counter}")
-# dup_sheet[get_column_letter(dup_col) + str(last_row + 4)].value = str(round(duplicates_value_sum, 2))
-# dup_sheet[get_column_letter(dup_col) + str(last_row + 5)].value = str(counter)
+dup_col = column_index_from_string(amountColumn) + 1
+for number in range(first_row+2, last_row+1, 3):
+    duplicates_value_sum = duplicates_value_sum + dup_sheet[str(get_column_letter(dup_col))+str(number)].value
+    count += 3
+    counter += 1
 
-# print(f"Duplicates: {duplicate}")
+
+print(f"Number of duplicates: {counter}")
+dup_sheet[get_column_letter(dup_col) + str(last_row + 4)].value = str(round(duplicates_value_sum, 2))
+dup_sheet[get_column_letter(dup_col) + str(last_row + 5)].value = str(counter)
+
+print(f"Duplicates: {duplicate}")
 
 
-# wb.close()
-# wb.save(mtnKRCollectionsPath + '/MTN KR Debit Metabase_12_Dec_22.xlsx')
-#### MTN KOWRI DISBURSEMENT (CREDIT) ####
+wb.close()
+wb.save(mtnKRCollectionsPath + '/MTN KR Debit Metabase Test'+full_day+'.xlsx')
+
+
+
+############################ MTN KOWRI DISBURSEMENT (CREDIT) ###############################################33####
 
 # mtnKRCreditPath = reconsPath + "/KOWRI/MTN/KR CREDIT"
 # files= os.listdir(mtnKRDebitPath)
