@@ -4,12 +4,13 @@ root = ctk.CTk()
 root.title("KowRecons")
 root.option_add("*tearOff", False)
 root._set_appearance_mode("light")
+root.geometry("500x550")
 
 def create_recons_frame(tab):
-    recons_frame = ctk.CTkFrame(tab)
+    recons_frame = ctk.CTkFrame(tab,fg_color="white")
     
-    ctk.CTkLabel(recons_frame, text="Recons for yesterday?").pack()
-    
+    ctk.CTkLabel(recons_frame, text="Recons for yesterday?",text_color="green").pack()
+
     recons_var = ctk.StringVar()
     recons_var.set("yes")
     
