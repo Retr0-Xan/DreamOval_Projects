@@ -5,35 +5,36 @@ from PIL import Image, ImageTk
 
 
 def main():
+
+    def on_map(event):
+            root.state("zoomed")
+
+
     root = ctk.CTk()
-    root.title("KowRecons")
+    root.geometry(f"{root.winfo_screenwidth()} x {root.winfo_screenheight()}")
+    root.bind("<Map>", on_map)
     root.option_add("*tearOff", False)
     root._set_appearance_mode("light")
-    root.geometry("1100x550")
-
-    bg_img=Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\login-bg(1).png")
-    label_width = root.winfo_screenwidth()
-    label_height = root.winfo_screenheight()
-    bg_img = bg_img.resize((label_width, label_height))
-    bg_img = ImageTk.PhotoImage(bg_img)
-
+    root.title("KowRecons")
+    bg_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\login-bg(5).png"), size = (root.winfo_screenwidth(),root.winfo_screenheight()))
     bg_label = ctk.CTkLabel(root, image=bg_img)
     bg_label.pack(fill="both",expand=True)
 
     bg_label.bg_img = bg_img
 
     # Load the PNG image using PIL
+    # image = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"),size = (200,70))
     image = Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png")
 
     # Convert the PIL Image to a PhotoImage
     img = ImageTk.PhotoImage(image.resize((200,70)))
 
     # Create a Canvas widget
-    canvas = tk.Canvas(bg_label, width=200, height=70)
+    canvas = ctk.CTkCanvas(bg_label, width=200, height=70)
     canvas.place(relx=0.05,rely=0.06)
 
     # Create a Label on the Canvas to display the transparent image
-    label = tk.Label(canvas, image=img)
+    label = ctk.CTkLabel(canvas, image=img,text="",fg_color="transparent")
     label.photo = img  # Keep a reference to the image to prevent it from being garbage collected
 
     # Place the Label on the Canvas
