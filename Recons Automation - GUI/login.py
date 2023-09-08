@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk,PhotoImage
 from PIL import Image, ImageTk
 
 
@@ -16,29 +16,16 @@ def main():
     root.option_add("*tearOff", False)
     root._set_appearance_mode("light")
     root.title("KowRecons")
-    bg_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\login-bg(5).png"), size = (root.winfo_screenwidth(),root.winfo_screenheight()))
+    bg_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\login-bg(4).png"), size = (root.winfo_screenwidth(),root.winfo_screenheight()))
     bg_label = ctk.CTkLabel(root, image=bg_img)
     bg_label.pack(fill="both",expand=True)
 
     bg_label.bg_img = bg_img
 
-    # Load the PNG image using PIL
-    # image = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"),size = (200,70))
-    image = Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png")
+    test_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"),size=(200,70))
+    label = ctk.CTkLabel(bg_label, image=test_img,text="",fg_color="#f0f2f1")
+    label.place(relx=0.02,rely=0.06)
 
-    # Convert the PIL Image to a PhotoImage
-    img = ImageTk.PhotoImage(image.resize((200,70)))
-
-    # Create a Canvas widget
-    canvas = ctk.CTkCanvas(bg_label, width=200, height=70)
-    canvas.place(relx=0.05,rely=0.06)
-
-    # Create a Label on the Canvas to display the transparent image
-    label = ctk.CTkLabel(canvas, image=img,text="",fg_color="transparent")
-    label.photo = img  # Keep a reference to the image to prevent it from being garbage collected
-
-    # Place the Label on the Canvas
-    canvas.create_window(0, 0, anchor=tk.NW, window=label)
 
     welcome_frame = ctk.CTkFrame(bg_label,fg_color="#01911e",corner_radius=10,bg_color="#ebf0ec",width=400,height=300)
     welcome_frame.pack_propagate(False)
