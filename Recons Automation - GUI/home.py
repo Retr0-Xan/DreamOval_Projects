@@ -4,7 +4,11 @@ from tkinter import ttk
 import calendar
 from datetime import datetime,date,timedelta
 from PIL import Image, ImageTk
-import sys, os, time,threading
+import sys, os
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.utils.cell import column_index_from_string
+import pandas as pd
 
 
 
@@ -121,6 +125,340 @@ def main ():
 
             elif recons_var.get() == "yes":
                 yesterdayRecons()
+
+            path = "C:\\Users\Mark\\repos\DreamOval_Projects\\Recons Automation - GUI"
+            dir_list = os.listdir(path=path)
+            print(dir_list)
+            # Check if metabase file is available
+            metaFileFound = False
+            for file in dir_list:
+                if file == 'Metabase' + yesterday + '.xlsx':
+                    metaFileFound = True
+                    break
+                else:
+                    metaFileFound = False
+            def get_column(keyword):
+                for i in range(first_row, last_row + 1):
+                    for j in range(first_col, last_col + 1):
+                        if sheet[str(get_column_letter(j)) + str(i)].value == keyword:
+                            return (get_column_letter(j))
+            #  ######################################## SLYDEPULL PROMPTS OVA #####################################################
+            for file in dir_list:
+                if file == 'MTN Prompt' + yesterday + '.xlsx':
+                    fileFound = True
+                    matchOVAFound = True
+                    Prompt_wb = load_workbook(f'{path}\\MTN Prompt' + yesterday + '.xlsx')
+                    sheet = Prompt_wb[Prompt_wb.sheetnames[0]]
+
+                    # DEFINE MAX AND MIN COLUMNS AND ROWS
+                    first_col = Prompt_wb.active.min_column
+                    last_col = Prompt_wb.active.max_column
+                    first_row = Prompt_wb.active.min_row
+                    last_row = Prompt_wb.active.max_row
+
+                    MTN_PROMPT_OVA_Volume = (last_row + 1) - (first_row + 1)
+                    OVA_VOLUME2 = MTN_PROMPT_OVA_Volume
+                    print('MTN_PROMPT_OVA_Volume: ' + str(MTN_PROMPT_OVA_Volume))
+
+                    MTN_PROMPT_OVA_Sum = 0.00
+
+                    amountColumn = get_column('Amount')
+                    ova_id_col = get_column('External Transaction Id')
+                    tmp_id_col = ova_id_col
+                    alternate_id_col = get_column("Id")
+                    for i in range(first_row + 1, last_row + 1):
+                        check = sheet[amountColumn + str(i)].value
+                        MTN_PROMPT_OVA_Sum = MTN_PROMPT_OVA_Sum + abs(float(sheet[amountColumn + str(i)].value))
+
+                    print('MTN_PROMPT_OVA_Sum: ' + str(MTN_PROMPT_OVA_Sum))
+                    OVA_VALUE2 = MTN_PROMPT_OVA_Sum
+                    Prompt_wb.close()
+                    Prompt_wb.save(f'{path}\\MTN Prompt' + yesterday + '- Recons.xlsx')
+                    match_OVA = f'{path}\\MTN Prompt' + yesterday + '- Recons.xlsx'
+
+                    wb = load_workbook(match_OVA)
+                    ws1 = wb.create_sheet("Duplicates")
+                    ws1.title = 'Duplicates'
+
+                    ws1 = wb.create_sheet("Missing Integrator Transactions")
+                    ws1.title = 'Missing Integrator Transactions'
+
+                    ws1 = wb.create_sheet("Missing Integrator Transactions")
+                    ws1.title = 'Missing Integrator Transactions'
+
+                    wb.close()
+                    wb.save(match_OVA)
+                    break
+                else:
+                    fileFound = False
+
+            if fileFound is False:
+                OVA_VOLUME2 = 0
+                OVA_VALUE2 = 0
+            #
+            #
+            #
+
+            # ################################### MTN(SLYDEPULL) PROMPT INT ###############################################
+            if metaFileFound is True:
+                matchINTFound = True
+                wb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
+                file = pd.read_excel(f'{path}\\Metabase' + yesterday + '.xlsx', sheet_name='Query result')
+
+                sheet = wb['Query result']
+                wb.active = wb['Query result']
+                first_col = wb.active.min_column
+                last_col = wb.active.max_column
+                first_row = wb.active.min_row
+                last_row = wb.active.max_row
+
+                int_id_col = get_column('integratorTransId')
+                transIdHeader = "integratorTransId"
+                if int_id_col is None:
+                    int_id_col = get_column("IntegratorTransId")
+                    transIdHeader = "IntegratorTransId"
+                debitCreditFlagColumn = get_column('creditDebitFlag')
+                creditDebitHeader = "creditDebitFlag"
+                if debitCreditFlagColumn is None:
+                    debitCreditFlagColumn = get_column("CreditDebitFlag")
+                    creditDebitHeader = "CreditDebitFlag"
+                serviceName_col = get_column('serviceName')
+                serviceNameHeader = "serviceName"
+                if serviceName_col is None:
+                    serviceName_col = get_column("ServiceName")
+                    serviceNameHeader = "ServiceName"
+                amountColumn = get_column("amount")
+                if amountColumn is None:
+                    amountColumn = get_column("Amount")
+
+                INT_VOLUME2 = 0.00
+                INT_VALUE2 = 0.00
+                row_count = 1
+                count = 0
+                sum = 0.00
+                counter = 0
+                headerChecker = True
+                # ------------------------------------------------- Duplicates ---------------------------------------------------------
+                list = []
+                duplicates = []
+                duplicates_value_sum= 0.00
+                for i in range(first_row + 1, last_row + 1):
+                    if sheet[serviceName_col + str(i)].value == 'MTN OVA' and sheet[debitCreditFlagColumn + str(i)].value == 'C':
+                        count += 1
+                        sum = sum + abs(float(sheet[amountColumn + str(i)].value))
+                        if sheet[int_id_col + str(i)].value not in list:
+                            list.append(sheet[int_id_col + str(i)].value)
+                        elif sheet[int_id_col + str(i)].value not in duplicates:
+                                data = file[(file[transIdHeader] == sheet[int_id_col + str(i)].value) & (file[serviceNameHeader] == 'MTN OVA') & (file[creditDebitHeader] == 'C')]
+                                try:
+                                    data_set_sum = data.iloc[1:, data.columns.get_loc("Amount")].sum()
+                                except:
+                                    data_set_sum = data.iloc[1:, data.columns.get_loc("amount")].sum()
+                                duplicates_value_sum = duplicates_value_sum + data_set_sum
+                                duplicates.append(sheet[int_id_col + str(i)].value)
+                                if counter > 0:
+                                    headerChecker = False
+                                with pd.ExcelWriter(match_OVA, mode='a', engine="openpyxl", if_sheet_exists='overlay') as writer:
+                                    data.to_excel(writer, sheet_name='Duplicates', startrow=row_count, header=headerChecker)
+                                    if headerChecker is False:
+                                        row_count += 2
+                                    else:
+                                        row_count += (data.shape[0]+1)
+                                    counter += 1
+                        else:
+                            if sheet[int_id_col + str(i)].value in duplicates:
+                                counter += 1
+                            continue
+                    else:
+                        continue
+                INT_VOLUME2 = count
+                INT_VALUE2 = sum
+                print(f"MTN Prompt INT Volume: {count}")
+                print(f"MTN Prompt INT Value: {sum}")
+
+                wb.close()
+                Mwb = load_workbook(match_OVA)
+
+                wb = load_workbook(match_OVA)
+                wb.active = wb['Duplicates']
+                dup_sheet = wb['Duplicates']
+                sheet = dup_sheet
+
+                first_col = wb.active.min_column
+                last_col = wb.active.max_column
+                first_row = wb.active.min_row
+                last_row = wb.active.max_row
+
+                if counter > 0:
+                    amountColumn = get_column('Amount')
+                    if amountColumn is None:
+                        amountColumn = get_column("amount")
+
+                    print(f"Number of duplicates: {counter}")
+                    dup_sheet[amountColumn + str(last_row + 4)].value = str(round(duplicates_value_sum, 2))
+                    dup_sheet[amountColumn + str(last_row + 5)].value = str(counter)
+
+                    print(f"Duplicates: {duplicates}")
+
+                    DUPLICATES_VOLUME2 = counter
+                    DUPLICATES_VALUE2 = duplicates_value_sum
+                else:
+                    DUPLICATES_VOLUME2 = 0
+                    DUPLICATES_VALUE2 = 0
+
+                wb.close()
+                wb.save(match_OVA)
+
+                if matchOVAFound is True and matchINTFound is True:
+                    # --------------------------------------- MISSING INT TRANSACTIONS ------------------------------------------------
+                    Owb = load_workbook(match_OVA)
+                    Osheet = Owb[Owb.sheetnames[0]]
+                    Owb.active = Owb[Owb.sheetnames[0]]
+                    file = pd.read_excel(match_OVA)
+                    sheet = Osheet
+
+                    Iwb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
+                    Isheet = Iwb['Query result']
+                    Iwb.active = Iwb['Query result']
+
+                    Ofirst_col = Owb.active.min_column
+                    Olast_col = Owb.active.max_column
+                    Ofirst_row = Owb.active.min_row
+                    Olast_row = Owb.active.max_row
+
+                    Ifirst_col = Iwb.active.min_column
+                    Ilast_col = Iwb.active.max_column
+                    Ifirst_row = Iwb.active.min_row
+                    Ilast_row = Iwb.active.max_row
+
+                    missing_INT_list = []
+                    missing_OVA_list = []
+                    matchFound = False
+                    headerChecker = True
+                    counter = 0
+
+                    for i in range(Ofirst_row + 1, Olast_row + 1):
+                        for j in range(Ifirst_row + 1, Ilast_row + 1):
+                            if Osheet[ova_id_col + str(i)].value is None or Osheet[ova_id_col + str(i)].value == "#VALUE!":
+                                ova_id_col = alternate_id_col
+                                matchFound = False
+                                break
+                            if (Isheet[serviceName_col + str(j)].value == 'MTN OVA') and (
+                                    Isheet[debitCreditFlagColumn + str(j)].value == 'C'):
+                                if str(Osheet[ova_id_col + str(i)].value).lstrip('=') in str(Isheet[int_id_col + str(j)].value):
+                                    matchFound = True
+                                    break
+                                else:
+                                    matchFound = False
+                        if matchFound is False:
+                            missing_INT_list.append(Osheet[ova_id_col + str(i)].value)
+                            ova_id_col = tmp_id_col
+
+                    print(f"Missing integrator transactions: {missing_INT_list}")
+
+                    count = 0
+                    for transaction in missing_INT_list:
+                        data = (file[file['External Transaction Id'] == transaction])
+                        if data.empty:
+                            data = (file[file['Id'] == transaction])
+                        if counter > 0:
+                            headerChecker = False
+                        with pd.ExcelWriter(match_OVA, mode='a', engine="openpyxl", if_sheet_exists='overlay') as writer:
+                            data.to_excel(writer, sheet_name='Missing Integrator Transactions', startrow=count,
+                                        header=headerChecker)
+                            if headerChecker is False:
+                                count += 1
+                            else:
+                                count += 2
+                            counter += 1
+
+                    Iwb.close()
+                    Owb.close()
+                    Mwb.close()
+
+                    # -------------------------------------- MISSING OVA TRANSACTIONS --------------------------------------------------
+                    Owb = load_workbook(match_OVA)
+                    Osheet = Owb[Owb.sheetnames[0]]
+                    Owb.active = Owb[Owb.sheetnames[0]]
+                    sheet = Osheet
+                    Mwb = load_workbook(match_OVA)
+
+                    Iwb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
+                    file = pd.read_excel(f'{path}\\Metabase' + yesterday + '.xlsx', sheet_name='Query result')
+                    Isheet = Iwb['Query result']
+                    Iwb.active = Iwb['Query result']
+
+                    Ofirst_col = Owb.active.min_column
+                    Olast_col = Owb.active.max_column
+                    Ofirst_row = Owb.active.min_row
+                    Olast_row = Owb.active.max_row
+
+                    Ifirst_col = Iwb.active.min_column
+                    Ilast_col = Iwb.active.max_column
+                    Ifirst_row = Iwb.active.min_row
+                    Ilast_row = Iwb.active.max_row
+
+                    missing_INT_list = []
+                    missing_OVA_list = []
+                    matchFound = False
+                    headerChecker = True
+                    counter = 0
+
+                    for i in range(Ifirst_row + 1, Ilast_row + 1):
+                        if (Isheet[serviceName_col + str(i)].value == 'MTN OVA') and (
+                                Isheet[debitCreditFlagColumn + str(i)].value == 'C'):
+                            for j in range(Ofirst_row + 1, Olast_row + 1):
+                                if str(Osheet[ova_id_col + str(j)].value).lstrip('=') in str(Isheet[int_id_col + str(i)].value):
+                                    matchFound = True
+                                    break
+                                else:
+                                    matchFound = False
+                            if matchFound is False:
+                                missing_OVA_list.append(Isheet[int_id_col + str(i)].value)
+                        else:
+                            continue
+
+                    print(f"Missing OVA transactions: {missing_OVA_list}")
+
+                    count = 0
+                    for transaction in missing_OVA_list:
+                        try:
+                            data = file[(file['integratorTransId'] == str(transaction))]
+                        except KeyError:
+                            data = file[(file['IntegratorTransId'] == str(transaction))]
+                        if counter > 0:
+                            headerChecker = False
+                        with pd.ExcelWriter(match_OVA, mode='a', engine="openpyxl", if_sheet_exists='overlay') as writer:
+                            data.to_excel(writer, sheet_name='Missing OVA Transactions', startrow=count, header=headerChecker)
+                            if headerChecker is False:
+                                count += 1
+                            else:
+                                count += 2
+                            counter += 1
+
+                    Iwb.close()
+                    Owb.close()
+                    Mwb.close()
+            else:
+                INT_VOLUME2 = 0
+                INT_VALUE2 = 0
+                DUPLICATES_VOLUME2 = 0
+                DUPLICATES_VALUE2 = 0
+
+            #
+            #
+            OVA_VOLUME3 = 0
+            OVA_VALUE3 = 0
+            INT_VOLUME3 = 0
+            INT_VALUE3 = 0
+            DUPLICATES_VALUE3 = 0
+            DUPLICATES_VOLUME3 = 0
+            #
+            #
+            #
+            matchOVAFound = False
+            matchINTFound = False
+            fileFound = False
 
             
         def topLevelConsole():
