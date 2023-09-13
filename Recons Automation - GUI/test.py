@@ -1,30 +1,40 @@
 import tkinter as tk
-from tkinter import PhotoImage
-from PIL import Image, ImageTk
+from tkinter import ttk
+import sys
+
+class Console(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.text_widget = tk.Text(self, wrap=tk.WORD)
+        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.text_widget.config(yscrollcommand=self.scrollbar.set)
+        
+        sys.stdout = self
+        
+    def write(self, text):
+        self.text_widget.insert(tk.END, text)
+        self.text_widget.see(tk.END)  # Automatically scroll to the end
+        
+    def flush(self):
+        pass
 
 def main():
     root = tk.Tk()
-    root.title("Image in Label Example")
+    root.title("Console Redirect Example")
 
-    # Load the image
-    img = Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\login-bg(1).png")  
+    console_frame = ttk.Frame(root)
+    console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-    # Get the dimensions of the label
-    label_width = 500  # Replace with the desired label width
-    label_height = 550  # Replace with the desired label height
+    console = Console(console_frame)
+    console.pack(fill=tk.BOTH, expand=True)
 
-    # Resize the image to fit the label
-    img = img.resize((label_width, label_height))
-
-    # Create a PhotoImage from the resized image
-    img = ImageTk.PhotoImage(img)
-
-    # Create a label with the image
-    label = tk.Label(root, image=img)
-    label.pack()
-
-    # Keep a reference to the image to prevent it from being garbage collected
-    label.img = img
+    # Test it by printing to the console
+    print("Hello, this is console output.Lezzzgooooo")
+    print("You can redirect stdout to this console.")
 
     root.mainloop()
 

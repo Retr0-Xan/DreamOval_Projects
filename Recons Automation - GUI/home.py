@@ -4,6 +4,29 @@ from tkinter import ttk
 import calendar
 from datetime import datetime,date,timedelta
 from PIL import Image, ImageTk
+import sys, os, time,threading
+
+
+
+class Console(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.text_widget = tk.Text(self, wrap=tk.WORD)
+        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.text_widget.config(yscrollcommand=self.scrollbar.set)
+        
+        sys.stdout = self
+        
+    def write(self, text):
+        self.text_widget.insert(tk.END, text)
+        self.text_widget.see(tk.END)  # Automatically scroll to the end
+        
+    def flush(self):
+        pass
 
 
 def main ():
@@ -98,6 +121,29 @@ def main ():
 
             elif recons_var.get() == "yes":
                 yesterdayRecons()
+
+            
+        def topLevelConsole():
+            consoleWindow = tk.Toplevel(root)
+            consoleWindow.title("Running")
+            consoleWindow.geometry("500x650")
+            consoleWindow.attributes('-topmost', True)
+
+            consoleWindow.columnconfigure(index=0, weight=1)
+            consoleWindow.columnconfigure(index=1, weight=1)
+            consoleWindow.columnconfigure(index=2, weight=1)
+            consoleWindow.rowconfigure(index=0, weight=1)
+            consoleWindow.rowconfigure(index=1, weight=1)
+            consoleWindow.rowconfigure(index=2, weight=1)
+
+            console_frame = ttk.Frame(consoleWindow)
+            console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+
+            console = Console(console_frame)
+            console.pack(fill=tk.BOTH, expand=True)
+
+            
     
         day_value_list = []
         for i in range(1,32):
@@ -132,7 +178,7 @@ def main ():
         yearCombo.current(0)
         yearCombo.pack()
 
-        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(displayValues()))
+        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(topLevelConsole(),displayValues()))
         startButton.pack(pady=(20,0))
 
 
