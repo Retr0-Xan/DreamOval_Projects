@@ -9,7 +9,9 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import column_index_from_string
 import pandas as pd
+import warnings
 
+warnings.filterwarnings("ignore")
 
 
 class Console(tk.Frame):
@@ -481,6 +483,9 @@ def main ():
             console = Console(console_frame)
             console.pack(fill=tk.BOTH, expand=True)
 
+
+
+            
             
     
         day_value_list = []
@@ -516,9 +521,18 @@ def main ():
         yearCombo.current(0)
         yearCombo.pack()
 
-        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(topLevelConsole(),displayValues()))
+        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startProgress(),topLevelConsole(),displayValues()))
         startButton.pack(pady=(20,0))
 
+
+        progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
+        progress_bar.pack_forget()
+        # progress_bar.pack()
+
+        def startProgress():
+            root.update()
+            progress_bar.pack()
+            progress_bar.start()
 
         
         recons_frame.pack(fill="both", expand=True)
