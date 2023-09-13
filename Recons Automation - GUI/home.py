@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import column_index_from_string
 import pandas as pd
-import warnings
+import warnings,time
 
 warnings.filterwarnings("ignore")
 
@@ -464,8 +464,8 @@ def main ():
 
             
         def topLevelConsole():
-            consoleWindow = tk.Toplevel(root)
-            consoleWindow.title("Running")
+            consoleWindow = tk.Tk()
+            consoleWindow.title("Results")
             consoleWindow.geometry("500x650")
             consoleWindow.attributes('-topmost', True)
 
@@ -479,9 +479,11 @@ def main ():
             console_frame = ttk.Frame(consoleWindow)
             console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-
+            print("test")
             console = Console(console_frame)
             console.pack(fill=tk.BOTH, expand=True)
+
+            consoleWindow.mainloop()
 
 
 
@@ -527,12 +529,12 @@ def main ():
 
         progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
         progress_bar.pack_forget()
-        # progress_bar.pack()
 
         def startProgress():
             root.update()
             progress_bar.pack()
             progress_bar.start()
+
 
         
         recons_frame.pack(fill="both", expand=True)
