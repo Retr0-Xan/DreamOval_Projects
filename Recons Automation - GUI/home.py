@@ -66,41 +66,29 @@ def main ():
 
         def yesterdayRecons():
             dayCombo.configure(state="disabled")
+            dayLabel.configure(text_color="grey")
+
             monthCombo.configure(state="disabled")
+            monthLabel.configure(text_color="grey")
+
             yearCombo.configure(state="disabled")
+            yearLabel.configure(text_color="grey")
+
             today = datetime.today().strftime('%d_%b_%y')
-
-            # Yesterday's date
-            yesterday = (datetime.now() - timedelta(1)).strftime('_%d %b_%y')
-            print(yesterday)
-
-            # Current month
-            current_month = calendar.month_abbr[date.today().month].upper()
-            print(current_month)
-
-            recons_yesterday = str((datetime.now() - timedelta(1)).strftime('%Y-%m-%d') + ' 00:00:00')
-            print(recons_yesterday)
-
-            if date.today().month < 10:
-                GIPmonth = "0" + str(date.today().month)
-            else:
-                GIPmonth = str(date.today().month)
-
-            if date.today().day < 10:
-                GIPday = "0" + str(date.today().day + 1)
-            else:
-                GIPday = str(date.today().day + 1)
-
-            GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
-            print(GIPdate)
 
         def customDateRecons():
                 dayCombo.configure(state="enabled")
+                dayLabel.configure(text_color="green")
+
                 monthCombo.configure(state="enabled")
+                monthLabel.configure(text_color="green")
+
                 yearCombo.configure(state="enabled")
+                yearLabel.configure(text_color="green")
+                
 
 
-        def displayValues():
+        def runRecons():
             if recons_var.get() == "no":
                 customDay = dayCombo.get()
                 customMonth = monthCombo.get()
@@ -125,8 +113,30 @@ def main ():
                 GIPdate = str("20" + str(customYear) + str(GIPmonth) + str((GIPday)))
                 print(GIPdate)
 
-            elif recons_var.get() == "yes":
-                yesterdayRecons()
+            else:
+                # Yesterday's date
+                yesterday = (datetime.now() - timedelta(1)).strftime('_%d %b_%y')
+                print(yesterday)
+
+                # Current month
+                current_month = calendar.month_abbr[date.today().month].upper()
+                print(current_month)
+
+                recons_yesterday = str((datetime.now() - timedelta(1)).strftime('%Y-%m-%d') + ' 00:00:00')
+                print(recons_yesterday)
+
+                if date.today().month < 10:
+                    GIPmonth = "0" + str(date.today().month)
+                else:
+                    GIPmonth = str(date.today().month)
+
+                if date.today().day < 10:
+                    GIPday = "0" + str(date.today().day + 1)
+                else:
+                    GIPday = str(date.today().day + 1)
+
+                GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
+                print(GIPdate)
 
             path = "C:\\Users\Mark\\repos\DreamOval_Projects\\Recons Automation - GUI"
             dir_list = os.listdir(path=path)
@@ -479,16 +489,14 @@ def main ():
             console_frame = ttk.Frame(consoleWindow)
             console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-            print("test")
             console = Console(console_frame)
             console.pack(fill=tk.BOTH, expand=True)
+
+            runRecons()
 
             consoleWindow.mainloop()
 
 
-
-            
-            
     
         day_value_list = []
         for i in range(1,32):
@@ -505,25 +513,25 @@ def main ():
         noRadio.pack(anchor=ctk.W)
 
 
-        dayLabel = ctk.CTkLabel(yesterday_frame,text="Day")
+        dayLabel = ctk.CTkLabel(yesterday_frame,text="Day",text_color="grey")
         dayLabel.pack()
         dayCombo = ttk.Combobox(yesterday_frame, state="disabled", values=day_value_list)
         dayCombo.current(0)
         dayCombo.pack()
 
-        monthLabel = ctk.CTkLabel(yesterday_frame,text="Month")
+        monthLabel = ctk.CTkLabel(yesterday_frame,text="Month",text_color="grey")
         monthLabel.pack()
         monthCombo = ttk.Combobox(yesterday_frame, state="disabled", values=month_value_list)
         monthCombo.current(0)
         monthCombo.pack()
 
-        yearLabel = ctk.CTkLabel(yesterday_frame,text="Year")
+        yearLabel = ctk.CTkLabel(yesterday_frame,text="Year",text_color="grey")
         yearLabel.pack()
         yearCombo = ttk.Combobox(yesterday_frame, state="disabled", values=["2022","2023"])
         yearCombo.current(0)
         yearCombo.pack()
 
-        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startProgress(),topLevelConsole(),displayValues()))
+        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startProgress(),topLevelConsole()))
         startButton.pack(pady=(20,0))
 
 

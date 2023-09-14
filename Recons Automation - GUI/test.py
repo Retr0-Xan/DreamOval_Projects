@@ -33,7 +33,7 @@ def main():
     console.pack(fill=tk.BOTH, expand=True)
 
     # Test it by printing to the console
-    print("Hello, this is console output.")
+    print("Hello, this is console output.testttt")
     print("You can redirect stdout to this console.")
 
     root.mainloop()
