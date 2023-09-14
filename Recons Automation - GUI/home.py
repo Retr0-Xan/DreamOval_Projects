@@ -498,6 +498,8 @@ def main ():
             console.pack(fill=tk.BOTH, expand=True)
 
             runRecons()
+            progress_bar.stop()
+            progress_bar.pack_forget()
 
 
             consoleWindow.mainloop()
@@ -507,11 +509,6 @@ def main ():
             progress_bar.pack()
             progress_bar.start()
 
-        # Event to signal when the first thread is done
-        first_thread_done = threading.Event()
-
-        # Flag to control the second thread
-        stop_second_thread = False
 
         def startProgress():
             progressThread.start()
