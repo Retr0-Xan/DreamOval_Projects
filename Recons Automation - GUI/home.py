@@ -594,12 +594,9 @@ def main ():
 
 
     tab_control = ttk.Notebook(root)
-
-    home_tab = ttk.Frame(tab_control)
     recons_tab = ttk.Frame(tab_control)
     logs_tab = ttk.Frame(tab_control)
 
-    tab_control.add(home_tab, text="Home")
     tab_control.add(recons_tab, text="Recons")
     tab_control.add(logs_tab, text="Logs")
 
