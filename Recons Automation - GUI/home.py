@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import column_index_from_string
 import pandas as pd
-import warnings,time,threading
+import warnings,time,threading,subprocess
 
 warnings.filterwarnings("ignore")
 
@@ -33,6 +33,12 @@ class Console(tk.Frame):
         
     def flush(self):
         pass
+
+def restart_program():
+    python = sys.executable  # Get the path to the Python interpreter
+    subprocess.Popen([python] + sys.argv)  # Restart the program with the same command line arguments
+    os._exit(0)  # Forcefully exit the current instance
+
 
 
 def main ():
@@ -501,6 +507,7 @@ def main ():
             progress_bar.stop()
             progress_bar.pack_forget()
 
+            consoleWindow.protocol("WM_DELETE_WINDOW", restart_program)
 
             consoleWindow.mainloop()
 
