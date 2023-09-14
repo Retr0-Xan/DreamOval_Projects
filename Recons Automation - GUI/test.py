@@ -1,42 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
-import sys
 
-class Console(tk.Frame):
-    def __init__(self, master):
-        super().__init__(master)
-        self.text_widget = tk.Text(self, wrap=tk.WORD)
-        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        self.text_widget.config(yscrollcommand=self.scrollbar.set)
-        
-        sys.stdout = self
-        
-    def write(self, text):
-        self.text_widget.insert(tk.END, text)
-        self.text_widget.see(tk.END)  # Automatically scroll to the end
-        
-    def flush(self):
-        pass
+def set_combobox_value():
+    combo.set("2")  # Set the value of the Combobox to the integer 2
 
-def main():
-    root = tk.Tk()
-    root.title("Console Redirect Example")
+root = tk.Tk()
+root.title("Set Combobox Value Example")
 
-    console_frame = ttk.Frame(root)
-    console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+combo = ttk.Combobox(root, values=[1, 2, 3])
+combo.pack(padx=10, pady=10)
 
-    console = Console(console_frame)
-    console.pack(fill=tk.BOTH, expand=True)
+button = tk.Button(root, text="Set Value", command=set_combobox_value)
+button.pack()
 
-    # Test it by printing to the console
-    print("Hello, this is console output.testttt")
-    print("You can redirect stdout to this console.")
-
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()
+root.mainloop()

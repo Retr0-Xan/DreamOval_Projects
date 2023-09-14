@@ -66,21 +66,26 @@ def main ():
 
         def yesterdayRecons():
             dayCombo.configure(state="disabled")
+            dayCombo.set((date.today().day)-1) 
             dayLabel.configure(text_color="grey")
 
             monthCombo.configure(state="disabled")
+            monthCombo.set(date.today().month)
             monthLabel.configure(text_color="grey")
 
             yearCombo.configure(state="disabled")
+            yearCombo.set(date.today().year)
             yearLabel.configure(text_color="grey")
 
             today = datetime.today().strftime('%d_%b_%y')
 
         def customDateRecons():
                 dayCombo.configure(state="enabled")
+                dayCombo.current(0) 
                 dayLabel.configure(text_color="green")
 
                 monthCombo.configure(state="enabled")
+                monthCombo.current(0) 
                 monthLabel.configure(text_color="green")
 
                 yearCombo.configure(state="enabled")
@@ -517,18 +522,21 @@ def main ():
         dayLabel.pack()
         dayCombo = ttk.Combobox(yesterday_frame, state="disabled", values=day_value_list)
         dayCombo.current(0)
+        dayCombo.set((date.today().day)-1)
         dayCombo.pack()
 
         monthLabel = ctk.CTkLabel(yesterday_frame,text="Month",text_color="grey")
         monthLabel.pack()
         monthCombo = ttk.Combobox(yesterday_frame, state="disabled", values=month_value_list)
         monthCombo.current(0)
+        monthCombo.set(date.today().month)
         monthCombo.pack()
 
         yearLabel = ctk.CTkLabel(yesterday_frame,text="Year",text_color="grey")
         yearLabel.pack()
         yearCombo = ttk.Combobox(yesterday_frame, state="disabled", values=["2022","2023"])
         yearCombo.current(0)
+        yearCombo.set(date.today().year)
         yearCombo.pack()
 
         startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startProgress(),topLevelConsole()))
