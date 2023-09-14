@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import column_index_from_string
 import pandas as pd
-import warnings,time
+import warnings,time,threading
 
 warnings.filterwarnings("ignore")
 
@@ -499,7 +499,27 @@ def main ():
 
             runRecons()
 
+
             consoleWindow.mainloop()
+
+        def loadingProgress():
+            root.update()
+            progress_bar.pack()
+            progress_bar.start()
+
+        # Event to signal when the first thread is done
+        first_thread_done = threading.Event()
+
+        # Flag to control the second thread
+        stop_second_thread = False
+
+        def startProgress():
+            progressThread.start()
+                
+
+        def startWindow():
+            consoleThread.start()
+
 
 
     
@@ -539,18 +559,15 @@ def main ():
         yearCombo.set(date.today().year)
         yearCombo.pack()
 
-        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startProgress(),topLevelConsole()))
+        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startWindow(),startProgress()))
         startButton.pack(pady=(20,0))
 
 
         progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
         progress_bar.pack_forget()
 
-        def startProgress():
-            root.update()
-            progress_bar.pack()
-            progress_bar.start()
-
+        progressThread = threading.Thread(target=loadingProgress)
+        consoleThread = threading.Thread(target=topLevelConsole)
 
         
         recons_frame.pack(fill="both", expand=True)
