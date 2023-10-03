@@ -26,14 +26,16 @@ if prompt.upper() == 'Y':
     recons_yesterday = str((datetime.now() - timedelta(1)).strftime('%Y-%m-%d') + ' 00:00:00')
     print(recons_yesterday)
 
+
+
     if date.today().month < 10:
         GIPmonth = "0" + str(date.today().month)
-    else:
+    elif date.today().month >=10:
         GIPmonth = str(date.today().month)
 
     if date.today().day < 10:
         GIPday = "0" + str(date.today().day + 1)
-    else:
+    elif date.today().month >=10:
         GIPday = str(date.today().day + 1)
 
     GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
