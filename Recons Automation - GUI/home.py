@@ -52,9 +52,12 @@ def main ():
     def render_recons_frame(tab):
         recons_frame = ctk.CTkFrame(tab,fg_color="white")
 
-        logo_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"),size=(200,70))
+
+        #windows path = "C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"
+        logo_img = ctk.CTkImage(Image.open("/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png"),size=(200,70))
         label = ctk.CTkLabel(recons_frame, image=logo_img,text="",fg_color="white")
         label.pack()
+        
         
 
 
@@ -585,12 +588,12 @@ def main ():
     root.rowconfigure(index=1, weight=1)
     root.rowconfigure(index=2, weight=1)
 
-    style = ttk.Style(root)
-    # Import the tcl file
-    root.tk.call("source", "Forest-ttk-theme-master/forest-light.tcl")
+    # style = ttk.Style(root)
+    # # Import the tcl file
+    # root.tk.call("source", "Forest-ttk-theme-master/forest-light.tcl")
 
-    # Set the theme with the theme_use method
-    style.theme_use("forest-light")
+    # # Set the theme with the theme_use method
+    # style.theme_use("forest-light")
 
 
     tab_control = ttk.Notebook(root)
