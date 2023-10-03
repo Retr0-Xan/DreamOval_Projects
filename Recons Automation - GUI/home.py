@@ -588,12 +588,12 @@ def main ():
     root.rowconfigure(index=1, weight=1)
     root.rowconfigure(index=2, weight=1)
 
-    # style = ttk.Style(root)
-    # # Import the tcl file
-    # root.tk.call("source", "Forest-ttk-theme-master/forest-light.tcl")
+    style = ttk.Style(root)
+    # Import the tcl file
+    root.tk.call("source", "Forest-ttk-theme-master/forest-light.tcl")
 
-    # # Set the theme with the theme_use method
-    # style.theme_use("forest-light")
+    # Set the theme with the theme_use method
+    style.theme_use("forest-light")
 
 
     tab_control = ttk.Notebook(root)
