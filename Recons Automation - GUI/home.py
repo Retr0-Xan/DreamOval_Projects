@@ -14,31 +14,31 @@ import warnings,time,threading,subprocess
 warnings.filterwarnings("ignore")
 
 
-# class Console(tk.Frame):
-#     def __init__(self, master):
-#         super().__init__(master)
-#         self.text_widget = tk.Text(self, wrap=tk.WORD)
-#         self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+class Console(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.text_widget = tk.Text(self, wrap=tk.WORD)
+        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-#         self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
-#         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-#         self.text_widget.config(yscrollcommand=self.scrollbar.set)
+        self.text_widget.config(yscrollcommand=self.scrollbar.set)
         
-#         sys.stdout = self
+        sys.stdout = self
         
-#     def write(self, text):
-#         self.text_widget.insert(tk.END, text)
-#         self.text_widget.see(tk.END)  # Automatically scroll to the end
+    def write(self, text):
+        self.text_widget.insert(tk.END, text)
+        self.text_widget.see(tk.END)  # Automatically scroll to the end
         
-#     def flush(self):
-#         pass
+    def flush(self):
+        pass
 
-# def restart_program():
-#     python = sys.executable  # Get the s to the Python interpreter
-#     subprocess.Popen([python] + sys.argv)  # Restart the program with the same command line arguments
-#     os._exit(0)  # Forcefully exit the current instance
-
+def restart_program():
+    python = sys.executable  # Get the path to the Python interpreter
+    subprocess.Popen([python] + sys.argv)  # Restart the program with the same command line arguments
+    os._exit(0)  # Forcefully exit the current instance
+#windows
 
 
 def main ():
@@ -52,12 +52,9 @@ def main ():
     def render_recons_frame(tab):
         recons_frame = ctk.CTkFrame(tab,fg_color="white")
 
-
-        #windows path = "C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"
-        logo_img = ctk.CTkImage(Image.open("/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png"),size=(200,70))
+        logo_img = ctk.CTkImage(Image.open("C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"),size=(200,70))
         label = ctk.CTkLabel(recons_frame, image=logo_img,text="",fg_color="white")
         label.pack()
-        
         
 
 
@@ -116,9 +113,6 @@ def main ():
                 yesterday = "_" + customDay + " " + month_name + "_" + customYear
                 print(yesterday)
 
-                GIPmonth = 0
-                GIPday = 0
-
                 recons_yesterday = "20" + customYear + "-" + customMonth + "-" + customDay + ' 00:00:00'
                 print(recons_yesterday)
 
@@ -155,7 +149,7 @@ def main ():
                 GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
                 print(GIPdate)
 
-            path = "/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/"
+            path = "C:\\Users\Mark\\repos\DreamOval_Projects\\Recons Automation - GUI"
             dir_list = os.listdir(path=path)
             print(dir_list)
             # Check if metabase file is available
@@ -176,7 +170,7 @@ def main ():
                 if file == 'MTN Prompt' + yesterday + '.xlsx':
                     fileFound = True
                     matchOVAFound = True
-                    Prompt_wb = load_workbook(f'{path}MTN Prompt' + yesterday + '.xlsx')
+                    Prompt_wb = load_workbook(f'{path}\\MTN Prompt' + yesterday + '.xlsx')
                     sheet = Prompt_wb[Prompt_wb.sheetnames[0]]
 
                     # DEFINE MAX AND MIN COLUMNS AND ROWS
@@ -202,8 +196,8 @@ def main ():
                     print('MTN_PROMPT_OVA_Sum: ' + str(MTN_PROMPT_OVA_Sum))
                     OVA_VALUE2 = MTN_PROMPT_OVA_Sum
                     Prompt_wb.close()
-                    Prompt_wb.save(f'{path}MTN Prompt' + yesterday + '- Recons.xlsx')
-                    match_OVA = f'{path}MTN Prompt' + yesterday + '- Recons.xlsx'
+                    Prompt_wb.save(f'{path}\\MTN Prompt' + yesterday + '- Recons.xlsx')
+                    match_OVA = f'{path}\\MTN Prompt' + yesterday + '- Recons.xlsx'
 
                     wb = load_workbook(match_OVA)
                     ws1 = wb.create_sheet("Duplicates")
@@ -231,8 +225,8 @@ def main ():
             # ################################### MTN(SLYDEPULL) PROMPT INT ###############################################
             if metaFileFound is True:
                 matchINTFound = True
-                wb = load_workbook(f'{path}Metabase' + yesterday + '.xlsx')
-                file = pd.read_excel(f'{path}Metabase' + yesterday + '.xlsx', sheet_name='Query result')
+                wb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
+                file = pd.read_excel(f'{path}\\Metabase' + yesterday + '.xlsx', sheet_name='Query result')
 
                 sheet = wb['Query result']
                 wb.active = wb['Query result']
@@ -346,7 +340,7 @@ def main ():
                     file = pd.read_excel(match_OVA)
                     sheet = Osheet
 
-                    Iwb = load_workbook(f'{path}Metabase' + yesterday + '.xlsx')
+                    Iwb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
                     Isheet = Iwb['Query result']
                     Iwb.active = Iwb['Query result']
 
@@ -412,8 +406,8 @@ def main ():
                     sheet = Osheet
                     Mwb = load_workbook(match_OVA)
 
-                    Iwb = load_workbook(f'{path}Metabase' + yesterday + '.xlsx')
-                    file = pd.read_excel(f'{path}Metabase' + yesterday + '.xlsx', sheet_name='Query result')
+                    Iwb = load_workbook(f'{path}\\Metabase' + yesterday + '.xlsx')
+                    file = pd.read_excel(f'{path}\\Metabase' + yesterday + '.xlsx', sheet_name='Query result')
                     Isheet = Iwb['Query result']
                     Iwb.active = Iwb['Query result']
 
@@ -490,45 +484,45 @@ def main ():
             fileFound = False
 
             
-        # def topLevelConsole():
-        #     consoleWindow = tk.Tk()
-        #     consoleWindow.title("Results")
-        #     consoleWindow.geometry("500x650")
-        #     consoleWindow.attributes('-topmost', True)
+        def topLevelConsole():
+            consoleWindow = tk.Tk()
+            consoleWindow.title("Results")
+            consoleWindow.geometry("500x650")
+            consoleWindow.attributes('-topmost', True)
 
-        #     consoleWindow.columnconfigure(index=0, weight=1)
-        #     consoleWindow.columnconfigure(index=1, weight=1)
-        #     consoleWindow.columnconfigure(index=2, weight=1)
-        #     consoleWindow.rowconfigure(index=0, weight=1)
-        #     consoleWindow.rowconfigure(index=1, weight=1)
-        #     consoleWindow.rowconfigure(index=2, weight=1)
+            consoleWindow.columnconfigure(index=0, weight=1)
+            consoleWindow.columnconfigure(index=1, weight=1)
+            consoleWindow.columnconfigure(index=2, weight=1)
+            consoleWindow.rowconfigure(index=0, weight=1)
+            consoleWindow.rowconfigure(index=1, weight=1)
+            consoleWindow.rowconfigure(index=2, weight=1)
 
-        #     console_frame = ttk.Frame(consoleWindow)
-        #     console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            console_frame = ttk.Frame(consoleWindow)
+            console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        #     console = Console(console_frame)
-        #     console.pack(fill=tk.BOTH, expand=True)
+            console = Console(console_frame)
+            console.pack(fill=tk.BOTH, expand=True)
 
-        #     runRecons()
-        #     progress_bar.stop()
-        #     progress_bar.pack_forget()
+            runRecons()
+            progress_bar.stop()
+            progress_bar.pack_forget()
 
-        #     consoleWindow.protocol("WM_DELETE_WINDOW", restart_program)
+            consoleWindow.protocol("WM_DELETE_WINDOW", restart_program)
 
-        #     consoleWindow.mainloop()
+            consoleWindow.mainloop()
 
-        # def loadingProgress():
-        #     root.update()
-        #     progress_bar.pack()
-        #     progress_bar.start()
+        def loadingProgress():
+            root.update()
+            progress_bar.pack()
+            progress_bar.start()
 
 
-        # def startProgress():
-        #     progressThread.start()
+        def startProgress():
+            progressThread.start()
                 
 
-        # def startWindow():
-        #     consoleThread.start()
+        def startWindow():
+            consoleThread.start()
 
 
 
@@ -569,15 +563,15 @@ def main ():
         yearCombo.set(date.today().year)
         yearCombo.pack()
 
-        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=runRecons)
+        startButton = ctk.CTkButton(yesterday_frame,text="Start",fg_color="green",hover_color="#1bcf48",command=lambda:(startWindow(),startProgress()))
         startButton.pack(pady=(20,0))
 
 
-        # progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
-        # progress_bar.pack_forget()
+        progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
+        progress_bar.pack_forget()
 
-        # progressThread = threading.Thread(target=loadingProgress)
-        # consoleThread = threading.Thread(target=topLevelConsole)
+        progressThread = threading.Thread(target=loadingProgress)
+        consoleThread = threading.Thread(target=topLevelConsole)
 
         
         recons_frame.pack(fill="both", expand=True)
