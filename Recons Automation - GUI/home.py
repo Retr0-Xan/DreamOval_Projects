@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore")
 #     os._exit(0)  # Forcefully exit the current instance
 
 
-# "test"
+
 def main ():
     root = ctk.CTk()
     root.title("KowRecons")
