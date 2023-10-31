@@ -1,13 +1,8 @@
 # version 1.1.0
-from openpyxl import load_workbook, worksheet
-from openpyxl.worksheet import worksheet
-from openpyxl.utils import get_column_letter
-from openpyxl.utils.cell import column_index_from_string
 import pandas as pd
 from typing import Literal, Tuple
 
 # from dateTime import yesterday, GIPdate, current_month, recons_yesterday
-import os
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
@@ -16,6 +11,43 @@ from datetime import timedelta
 def get_date(
     date: date, format: Literal["gip"] | Literal["normal"] | Literal["recons"]
 ):
+    """
+    Formats a given date according to the specified format.
+
+    Parameters:
+    date (date): A datetime.date object representing the date to be formatted.
+    format (Literal["gip"] | Literal["normal"] | Literal["recons"]): The format to use for formatting the date.
+        - "gip": Format date as "YYYYMMDD" (e.g., 20231201).
+        - "recons": Format date as "YYYY-MM-DD" (e.g., 2023-12-01).
+        - "normal": Format date as day_month_year (e.g., 1_Jan_23).
+
+    Returns:
+    str: The formatted date string based on the specified format.
+
+    Example:
+    input_date = date(2023, 12, 1)
+
+    # Format as "YYYYMMDD"
+    gip_format = get_date(input_date, "gip")
+    print(gip_format)
+    # Output: "20231201"
+
+    # Format as "YYYY-MM-DD"
+    recons_format = get_date(input_date, "recons")
+    print(recons_format)
+    # Output: "2023-12-01"
+
+    # Format as "normal"
+    normal_format = get_date(input_date, "normal")
+    print(normal_format)
+    # Output: "1 Jan_23"
+
+    Note:
+    - This function allows formatting a date in three different formats based on the 'format' parameter.
+    - 'gip' format represents the date as "YYYYMMDD".
+    - 'recons' format represents the date as "YYYY-MM-DD".
+    - 'normal' format represents the date as day_month_year (e.g., 1_Jan_23).
+    """
     if format == "gip":
         return date.strftime("%Y%m%d")  # Output date in format: 20231201
     elif format == "recons":
@@ -46,55 +78,26 @@ print(current_month)
 GIPdate = get_date(date=date_ + timedelta(1), format="gip")
 print(GIPdate)
 
-
-def get_column(
-    keyword: str,
-    sheet: worksheet.Worksheet,
-    first_row: int,
-    last_row: int,
-    first_col: int,
-    last_col: int,
-):
-    for i in range(first_row, last_row + 1):
-        for j in range(first_col, last_col + 1):
-            if sheet[str(get_column_letter(j)) + str(i)].value == keyword:
-                return get_column_letter(j)
+# def metabase_file_exists() -> bool:
+#     dir_list = os.listdir()
+#     # Check if metabase file is available
+#     metabase_file_name = "Metabase" + yesterday + ".xlsx"
+#     for file in dir_list:
+#         if file == metabase_file_name:
+#             return True
+#     return False
 
 
-dir_list = os.listdir()
-
-
-def metabase_file_exists() -> bool:
-    dir_list = os.listdir()
-    # Check if metabase file is available
-    metabase_file_name = "Metabase" + yesterday + ".xlsx"
-    for file in dir_list:
-        if file == metabase_file_name:
-            return True
-    return False
-
-
-meta_file_found = metabase_file_exists()
-
-
-def find_duplicates(
-    file_name: str,
-    skip_rows: int = 0
-):
+def find_duplicates(int_df: pd.DataFrame):
     tx_id_col_names = ["integratorTransId", "IntegratorTransId"]
     amount_col_names = ["Amount", "amount"]
-
-    int_df = pd.read_excel(file_name, skiprows=skip_rows)
-    int_df = int_df.loc[
-        (int_df["ServiceName"] == "MTN OVA") & (int_df["CreditDebitFlag"] == "C")
-    ]
 
     trans_id_col = ""
     for name in tx_id_col_names:
         if name in int_df.columns:
             trans_id_col = name
             break
-        
+
     amount_col = ""
     for name in amount_col_names:
         if name in int_df.columns:
@@ -117,306 +120,119 @@ def find_duplicates(
         else:
             unique_tx[tx_id] = index
 
-    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a") as writer:
-        sheet_name = "Duplicates"
+    return pd.DataFrame(duplicates_tx), duplicate_value
 
-        dup_df = pd.DataFrame(duplicates_tx)
-        dup_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-def run_recons(file_names: Tuple[str, str], num_lines_of_header: Tuple[int, int]):
+def run_recons(
+    file_names: Tuple[str | None, str | None],
+    num_lines_of_header: Tuple[int, int],
+    mb_service_name: str,
+    mb_creditDebit_flag: str,
+    alt_recons_name: str,
+):
     ova_file_name = file_names[0]
     int_file_name = file_names[1]
     ova_header_lines = num_lines_of_header[0]
     int_header_lines = num_lines_of_header[1]
+    recons_file = alt_recons_name if ova_file_name is None else f"{ova_file_name[:-5]} - Recons.xlsx"
 
-    file_found = False
-    match_ova_found = False
-    for file in dir_list:
-        if file == ova_file_name:
-            file_found = True
-            match_ova_found = True
-            wb = load_workbook(ova_file_name, read_only=True)
-            sheet = wb[wb.sheetnames[0]]
-            wb.active = wb[wb.sheetnames[0]]
-
-            # DEFINE MAX AND MIN COLUMNS AND ROWS
-            first_col: int = wb.active.min_column
-            last_col: int = wb.active.max_column
-            first_row: int = wb.active.min_row
-            last_row: int = wb.active.max_row
-
-            OVA_VOLUME1 = (last_row + 1) - (first_row + ova_header_lines)
-            print("MIGS_01_OVA_Volume: " + str(OVA_VOLUME1))
-
-            amount_total = 0.00
-
-            amount_column = get_column(
-                "Amount", sheet, first_row, last_row, first_col, last_col
-            )  # TODO: Some have different names instead of "Amount"
-            if (
-                amount_column == None
-            ):  # TODO: Might need to handle this differently, other than just return
-                return
-
-            for i in range(first_row + 4, last_row + 1):
-                amount_total += abs(float(sheet[amount_column + str(i)].value))
-
-            print("MIGS_01_OVA_Sum: " + str(amount_total))
-            OVA_VALUE1 = amount_total
-            ova_id_col = get_column(
-                "Merchant Transaction Reference",
-                sheet,
-                first_row,
-                last_row,
-                first_col,
-                last_col,
-            )
-            tmp_id_col = ova_id_col
-
-            alternate_id_col = get_column(
-                "Transaction ID", sheet, first_row, last_row, first_col, last_col
-            )
-            wb.close()
-
-            match_ova = ova_file_name.rpartition(".")[0] + " - Recons.xlsx"
-            wb.save(match_ova)
-
-            wb = load_workbook(match_ova)
-            ws1 = wb.create_sheet("Duplicates")
-            ws1.title = "Duplicates"
-
-            ws1 = wb.create_sheet("Missing Integrator Transactions")
-            ws1.title = "Missing Integrator Transactions"
-
-            ws1 = wb.create_sheet("Missing OVA Transactions")
-            ws1.title = "Missing OVA Transactions"
-
-            wb.close()
-            wb.save(match_ova)
+    ova_file_df: pd.DataFrame | None = None
+    int_file_df: pd.DataFrame | None = None
+    if ova_file_name is not None:
+        ova_file_df = pd.read_excel(ova_file_name)
+        OVA_VOLUME1 = len(ova_file_df)
+        print(f"MIGS_01_OVA_Volume: {str(OVA_VOLUME1)}")
+        amount_col_names = ["Amount", "amount"]
+        amount_col = ""
+        for name in amount_col_names:
+            if name in ova_file_df:
+                amount_col = name
             break
-        else:
-            file_found = False
+        OVA_VALUE1 = ova_file_df[amount_col].sum()
 
-    if file_found is False:
-        OVA_VOLUME1 = 0
-        OVA_VALUE1 = 0
+        print(OVA_VALUE1)
+        with pd.ExcelWriter(
+            recons_file, engine="openpyxl", mode="w"
+        ) as writer:  # specify new file name to write to
+            ova_file_df.to_excel(
+                writer, sheet_name="Sheet1", index=False
+            )  # save original data into first sheet of new file
 
-    #
-    #
-    #
-    file_found = False
-    match_int_found = False
-    #  ##################################################### SLYDEPAY01 INT #################################################
-    for file in dir_list:
-        if file == int_file_name:
-            file_found = True
-            match_int_found = True
-            wb = load_workbook(int_file_name)
-            sheet = wb[wb.sheetnames[0]]
-            wb.active = wb[wb.sheetnames[0]]
-            file = pd.read_excel(int_file_name)
-            match_INT = int_file_name
-
-            # DEFINE MAX AND MIN COLUMNS AND ROWS
-            first_col = wb.active.min_column
-            last_col = wb.active.max_column
-            first_row = wb.active.min_row
-            last_row = wb.active.max_row
-
-            MIGS_01_INT_Volume = (last_row + 1) - (first_row + 1)
-            INT_VOLUME1 = MIGS_01_INT_Volume
-            print("MIGS_01_INT_Volume: " + str(MIGS_01_INT_Volume))
-
-            MIGS_01_INT_Sum = 0.00
-
-            int_id_col = get_column(
-                "External Payment Request â†’ Institution Trans ID",
-                sheet,
-                first_row,
-                last_row,
-                first_col,
-                last_col,
-            )
-            id_Col = "External Payment Request â†’ Institution Trans ID"
-            if int_id_col is None:
-                int_id_col = get_column(
-                    "Institution Trans ID",
-                    sheet,
-                    first_row,
-                    last_row,
-                    first_col,
-                    last_col,
-                )
-                id_Col = "Institution Trans ID"
-            amount_column = get_column(
-                "Amount", sheet, first_row, last_row, first_col, last_col
-            )
-            if amount_column is None:
-                amount_column = get_column(
-                    "Amount ($)", sheet, first_row, last_row, first_col, last_col
-                )
-            if amount_column is None:
-                amount_column = get_column(
-                    "Actual Amount ($)", sheet, first_row, last_row, first_col, last_col
-                )
-            for i in range(first_row + 1, last_row + 1):
-                MIGS_01_INT_Sum = MIGS_01_INT_Sum + abs(
-                    float(sheet[amount_column + str(i)].value)
-                )
-
-            print("MIGS_01_INT_Sum: " + str(MIGS_01_INT_Sum))
-            INT_VALUE1 = MIGS_01_INT_Sum
-            wb.close()
-            wb.save(int_file_name)
-            
-            # ---------------------------------------- Get duplicates -----------------------------------------------------
-            find_duplicates(match_ova, int_file_name, first_row, last_row, int_id_col, id_Col, file)
-
-
-            # ---------------------------------------- MISSING INT TRANSACTIONS -----------------------------------------
-            if match_ova_found is True and match_int_found is True:
-                Owb = load_workbook(match_ova)
-                Osheet = Owb[Owb.sheetnames[0]]
-                Owb.active = Owb[Owb.sheetnames[0]]
-                file = pd.read_excel(match_ova, header=[3])
-
-                Iwb = load_workbook(match_INT)
-                Isheet = Iwb[Iwb.sheetnames[0]]
-                Iwb.active = Iwb[Iwb.sheetnames[0]]
-
-                Ofirst_col = Owb.active.min_column
-                Olast_col = Owb.active.max_column
-                Ofirst_row = Owb.active.min_row
-                Olast_row = Owb.active.max_row
-
-                Ifirst_col = Iwb.active.min_column
-                Ilast_col = Iwb.active.max_column
-                Ifirst_row = Iwb.active.min_row
-                Ilast_row = Iwb.active.max_row
-
-                missing_INT_list = []
-                missing_OVA_list = []
-                headerChecker = True
-                matchFound = False
-                counter = 0
-
-                for i in range(Ofirst_row + 4, Olast_row + 1):
-                    for j in range(Ifirst_row + 1, Ilast_row + 1):
-                        if (
-                            Osheet[ova_id_col + str(i)].value is None
-                            or Osheet[ova_id_col + str(i)].value == "#VALUE!"
-                        ):
-                            ova_id_col = alternate_id_col
-                            matchFound = False
-                            break
-                        if str(Osheet[ova_id_col + str(i)].value) == str(
-                            Isheet[int_id_col + str(j)].value
-                        ):
-                            matchFound = True
-                            break
-                        else:
-                            matchFound = False
-                    if matchFound is False:
-                        missing_INT_list.append(Osheet[ova_id_col + str(i)].value)
-                        ova_id_col = tmp_id_col
-                print(f"Missing integrator transactions: {missing_INT_list}")
-
-                count = 0
-                for transaction in missing_INT_list:
-                    data = file[file["Merchant Transaction Reference"] == transaction]
-                    if data.empty:
-                        data = file[file["Transaction ID"] == transaction]
-                    if counter > 0:
-                        headerChecker = False
-                    with pd.ExcelWriter(
-                        match_ova,
-                        mode="a",
-                        engine="openpyxl",
-                        if_sheet_exists="overlay",
-                    ) as writer:
-                        data.to_excel(
-                            writer,
-                            sheet_name="Missing Integrator Transactions",
-                            startrow=count,
-                            header=headerChecker,
-                        )
-                        if headerChecker is False:
-                            count += 1
-                        else:
-                            count += 2
-                        counter += 1
-
-                Iwb.close()
-                Owb.close()
-
-                # ----------------------------------------- MISSING OVA TRANSACTIONS -------------------------------------------
-                Owb = load_workbook(match_ova)
-                Osheet = Owb[Owb.sheetnames[0]]
-                Owb.active = Owb[Owb.sheetnames[0]]
-
-                Iwb = load_workbook(match_INT)
-                Isheet = Iwb[Iwb.sheetnames[0]]
-                Iwb.active = Iwb[Iwb.sheetnames[0]]
-                file = pd.read_excel(match_INT)
-
-                Ofirst_col = Owb.active.min_column
-                Olast_col = Owb.active.max_column
-                Ofirst_row = Owb.active.min_row
-                Olast_row = Owb.active.max_row
-
-                Ifirst_col = Iwb.active.min_column
-                Ilast_col = Iwb.active.max_column
-                Ifirst_row = Iwb.active.min_row
-                Ilast_row = Iwb.active.max_row
-
-                missing_INT_list = []
-                missing_OVA_list = []
-                matchFound = False
-                headerChecker = True
-                counter = 0
-
-                for i in range(Ifirst_row + 1, Ilast_row + 1):
-                    for j in range(Ofirst_row + 1, Olast_row + 1):
-                        if str(Isheet[int_id_col + str(i)].value) == str(
-                            Osheet[ova_id_col + str(j)].value
-                        ):
-                            matchFound = True
-                            break
-                        else:
-                            matchFound = False
-                    if matchFound is False:
-                        missing_OVA_list.append(Isheet[int_id_col + str(i)].value)
-                print(f"Missing OVA transactions: {missing_OVA_list}")
-                count = 0
-                for transaction in missing_OVA_list:
-                    data = file[file[id_Col] == transaction]
-                    if counter > 0:
-                        headerChecker = False
-                    with pd.ExcelWriter(
-                        match_ova,
-                        mode="a",
-                        engine="openpyxl",
-                        if_sheet_exists="overlay",
-                    ) as writer:
-                        data.to_excel(
-                            writer,
-                            sheet_name="Missing OVA Transactions",
-                            startrow=count,
-                            header=headerChecker,
-                        )
-                        if headerChecker is False:
-                            count += 1
-                        else:
-                            count += 2
-                        counter += 1
-                Iwb.close()
-                Owb.close()
+    if int_file_name is not None:
+        int_file_df = pd.read_excel(int_file_name)
+        int_file_df = int_file_df.loc[
+            (int_file_df["ServiceName"] == mb_service_name)
+            & (int_file_df["CreditDebitFlag"] == mb_creditDebit_flag)
+        ]
+        INT_VOLUME1 = len(int_file_df)
+        print(f"MIGS_01_INT_Volume: {str(INT_VOLUME1)}")
+        amount_col_names = ["Amount", "amount"]
+        amount_col = ""
+        for name in amount_col_names:
+            if name in int_file_df:
+                amount_col = name
             break
-        else:
-            file_found = False
+        INT_VALUE1 = int_file_df[amount_col].sum()
+        print(INT_VALUE1)
+        dup, dup_val = find_duplicates(int_file_df)
 
-    if file_found is False:
-        INT_VOLUME1 = 0
-        INT_VALUE1 = 0
-        DUPLICATES_VOLUME1 = 0
-        DUPLICATES_VALUE1 = 0
+        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
+            sheet_name = "Duplicates"
+
+            dup.to_excel(writer, sheet_name=sheet_name, index=False)
+            # TODO: Write dup_val to the sheet
+
+    if ova_file_df and int_file_df:
+        missing_ova_idx = get_missing_tx(
+            x=ova_file_df["Id"].astype("string"),
+            y=int_file_df["BillerTransId"].astype("string"),
+        ).index
+
+        missing_int_idx = get_missing_tx(
+            x=int_file_df["BillerTransId"].astype("string"),
+            y=ova_file_df["Id"].astype("string"),
+        ).index
+
+        missing_ova_tx = ova_file_df.iloc[missing_ova_idx]
+        missing_int_tx = int_file_df.iloc[missing_int_idx]
+
+        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
+            sheet_name = "Missing OVA Transactions"
+            missing_ova_tx.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
+            sheet_name = "Missing Integrator Transactions"
+            missing_int_tx.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            # TODO: Write missing ova anbd int transactions into sheet.
+
+
+def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
+    """
+    Returns the elements in Series 'x' that are not present in Series 'y'.
+
+    Parameters:
+    ----------
+    x (pd.Series): A pandas Series containing elements to be checked for presence in 'y'.
+    y (pd.Series): A pandas Series containing elements to be checked against for presence.
+
+    Returns:
+    -------
+    pd.Series: A pandas Series containing elements from 'x' that are missing in 'y'.
+
+    Note:
+    ----
+    - This function performs a check to find elements in Series 'x' that are not present in Series 'y'.
+    - The resulting Series contains only the elements that are missing in 'y' while maintaining the original order from 'x'.
+    """
+    missing = ~x.isin(y)
+    return x[missing]
+
+
+run_recons(
+    ("MTN Prompt_13 Oct_23.xlsx", "Metabase_13 Oct_23.xlsx"),
+    num_lines_of_header=(0, 0),
+    mb_service_name="MTN OVA",
+    mb_creditDebit_flag="C",
+    alt_recons_name="MTN Prompt",
+)
