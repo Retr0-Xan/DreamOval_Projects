@@ -56,28 +56,6 @@ def get_date(
         return date.strftime("%-d %b_%y")  # Output date in format: 1_Jan_23
 
 
-prompt = input("Recons for yesterday? (Y/N) :")
-if prompt.upper() == "Y":
-    date_ = date.today() - timedelta(1)
-else:
-    print("Please enter the date...")
-    day = int(input("Recons Day (1-31): "))
-    month = int(input("Recons Month (1-12): "))
-    year = int(input("Recons Year (eg 2023): "))
-    date_ = datetime(year=year, month=month, day=day)
-
-yesterday = f"_{get_date(date_, format='normal')}"
-print(yesterday)
-
-recons_yesterday = f"{get_date(date_, format='recons')} 00:00:00"
-print(recons_yesterday)
-
-current_month = date_.strftime("%b").upper()  # JAN, FEB
-print(current_month)
-
-GIPdate = get_date(date=date_ + timedelta(1), format="gip")
-print(GIPdate)
-
 # def metabase_file_exists() -> bool:
 #     dir_list = os.listdir()
 #     # Check if metabase file is available
@@ -134,14 +112,18 @@ def run_recons(
     int_file_name = file_names[1]
     ova_header_lines = num_lines_of_header[0]
     int_header_lines = num_lines_of_header[1]
-    recons_file = alt_recons_name if ova_file_name is None else f"{ova_file_name[:-5]} - Recons.xlsx"
+    recons_file = (
+        alt_recons_name
+        if ova_file_name is None
+        else f"{ova_file_name[:-5]} - Recons.xlsx"
+    )
 
     ova_file_df: pd.DataFrame | None = None
     int_file_df: pd.DataFrame | None = None
     if ova_file_name is not None:
         ova_file_df = pd.read_excel(ova_file_name)
         OVA_VOLUME1 = len(ova_file_df)
-        print(f"MIGS_01_OVA_Volume: {str(OVA_VOLUME1)}")
+        print(f"MIGS_01_OVA_Volume: {OVA_VOLUME1}")
         amount_col_names = ["Amount", "amount"]
         amount_col = ""
         for name in amount_col_names:
@@ -182,7 +164,7 @@ def run_recons(
             dup.to_excel(writer, sheet_name=sheet_name, index=False)
             # TODO: Write dup_val to the sheet
 
-    if ova_file_df and int_file_df:
+    if ova_file_df is not None and int_file_df is not None:
         missing_ova_idx = get_missing_tx(
             x=ova_file_df["Id"].astype("string"),
             y=int_file_df["BillerTransId"].astype("string"),
@@ -229,10 +211,33 @@ def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
     return x[missing]
 
 
-run_recons(
-    ("MTN Prompt_13 Oct_23.xlsx", "Metabase_13 Oct_23.xlsx"),
-    num_lines_of_header=(0, 0),
-    mb_service_name="MTN OVA",
-    mb_creditDebit_flag="C",
-    alt_recons_name="MTN Prompt",
-)
+if __name__ == "__main__":
+    prompt = input("Recons for yesterday? (Y/N) :")
+    if prompt.upper() == "Y":
+        date_ = date.today() - timedelta(1)
+    else:
+        print("Please enter the date...")
+        day = int(input("Recons Day (1-31): "))
+        month = int(input("Recons Month (1-12): "))
+        year = int(input("Recons Year (eg 2023): "))
+        date_ = datetime(year=year, month=month, day=day)
+
+    yesterday = f"_{get_date(date_, format='normal')}"
+    print(yesterday)
+
+    recons_yesterday = f"{get_date(date_, format='recons')} 00:00:00"
+    print(recons_yesterday)
+
+    current_month = date_.strftime("%b").upper()  # JAN, FEB
+    print(current_month)
+
+    GIPdate = get_date(date=date_ + timedelta(1), format="gip")
+    print(GIPdate)
+
+    run_recons(
+        ("KR MTN Credit_24 Oct_23.xlsx", "KR MTN Disb_mBase_24 Oct_23.xlsx"),
+        num_lines_of_header=(0, 0),
+        mb_service_name="MTN OVA",
+        mb_creditDebit_flag="C",
+        alt_recons_name="MTN Prompt",
+    )
