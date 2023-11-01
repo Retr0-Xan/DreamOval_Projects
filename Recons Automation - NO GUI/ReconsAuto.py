@@ -100,26 +100,52 @@ def find_duplicates(int_df: pd.DataFrame):
 
     return pd.DataFrame(duplicates_tx), duplicate_value
 
-def write_duplicate_data(column_to_search: str, df:pd.DataFrame, value: float,file_name: str):
-    column_to_insert = column_to_search
+def write_duplicate_data(amount_col_name: str, df:pd.DataFrame, value: float,file_name: str):
     number_of_duplicates = len(df)
+    amount_column = df.columns.get_loc(amount_col_name)
     empty_row_1 = pd.DataFrame({col: [None] for col in df.columns})
     empty_row_2 = pd.DataFrame({col: [None] for col in df.columns})
     empty_row_3 = pd.DataFrame({col: [None] for col in df.columns})
 
     # Concatenate the empty rows with the original DataFrame
     df = pd.concat([df, empty_row_1, empty_row_2,empty_row_3], ignore_index=True)
-    df.iat[2,1] = value
-    df.iat[3,1] = number_of_duplicates
+    df.iat[df.index[-2],amount_column] = value
+    df.iat[df.index[-1],amount_column] = number_of_duplicates
     with pd.ExcelWriter(file_name, engine="openpyxl", mode="a") as writer:
         sheet_name = "Duplicates"
 
         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
 
-def write_missing_data():
-    ...
+def write_missing_ova_data(amount_col_name: str, df:pd.DataFrame, value: float,file_name: str):
+    number_of_tx= len(df)
+    empty_row_1 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_2 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_3 = pd.DataFrame({col: [None] for col in df.columns})
+    amount_column = df.columns.get_loc(amount_col_name)
+    # Concatenate the empty rows with the original DataFrame
+    df = pd.concat([df, empty_row_1, empty_row_2,empty_row_3], ignore_index=True)
+    df.iat[df.index[-2],amount_column] = value
+    df.iat[df.index[-1],amount_column] = number_of_tx
+    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a") as writer:
+        sheet_name = "Missing OVA Transactions"
 
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+def write_missing_int_data(amount_col_name: str, df:pd.DataFrame, value: float,file_name: str):
+    number_of_tx= len(df)
+    empty_row_1 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_2 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_3 = pd.DataFrame({col: [None] for col in df.columns})
+    amount_column = df.columns.get_loc(amount_col_name)
+    # Concatenate the empty rows with the original DataFrame
+    df = pd.concat([df, empty_row_1, empty_row_2,empty_row_3], ignore_index=True)
+    df.iat[df.index[-2],amount_column] = value
+    df.iat[df.index[-1],amount_column] = number_of_tx
+    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a") as writer:
+        sheet_name = "Missing INT Transactions"
+
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
 
 def run_recons(
     file_names: Tuple[str | None, str | None],
@@ -179,7 +205,7 @@ def run_recons(
         INT_VALUE1 = int_file_df[amount_col].sum()
         print(INT_VALUE1)
         dup, dup_val = find_duplicates(int_file_df)
-        write_duplicate_data(column_to_search='Amount',df=dup,value=dup_val,file_name=recons_file)
+        write_duplicate_data(amount_col_name='Amount',df=dup,value=dup_val,file_name=recons_file)
 
     # ---------------------- MISSING TRANSACTIONS -------------------------    
     if ova_file_df is not None and int_file_df is not None:
@@ -192,19 +218,18 @@ def run_recons(
             x=int_file_df["BillerTransId"].astype("string"),
             y=ova_file_df["Id"].astype("string"),
         ).values
+        
+        missing_ova_amount_name = 'Amount'
+        missing_ova_data = int_file_df[int_file_df['BillerTransId'].isin(missing_ova_tx)]
+        missing_ova_value = missing_ova_data[missing_ova_amount_name].sum()
 
-        data = int_file_df[int_file_df['BillerTransId'].isin(missing_ova_tx)]
-        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
-            sheet_name = "Missing OVA Transactions"
-            data.to_excel(writer, sheet_name=sheet_name, index=False)
-
-        data = ova_file_df[ova_file_df["Id"].isin(missing_int_tx)]
-        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
-            sheet_name = "Missing Integrator Transactions"
-            data.to_excel(writer, sheet_name=sheet_name, index=False)
+        missing_int_amount_name = 'Amount'
+        missing_int_data = ova_file_df[ova_file_df["Id"].isin(missing_int_tx)]
+        missing_int_value = missing_int_data[missing_int_amount_name].sum()
 
             # TODO: Write missing ova and int transactions into sheet.
-
+        write_missing_ova_data(amount_col_name='Amount',df=missing_ova_data,file_name=recons_file,value=missing_ova_value)
+        write_missing_int_data(amount_col_name="Amount",df=missing_int_data,file_name=recons_file,value=missing_int_value)
 
 def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
     """
