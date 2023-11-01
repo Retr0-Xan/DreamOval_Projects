@@ -100,6 +100,26 @@ def find_duplicates(int_df: pd.DataFrame):
 
     return pd.DataFrame(duplicates_tx), duplicate_value
 
+def write_duplicate_data(column_to_search: str, df:pd.DataFrame, value: float,file_name: str):
+    column_to_insert = column_to_search
+    number_of_duplicates = len(df)
+    empty_row_1 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_2 = pd.DataFrame({col: [None] for col in df.columns})
+    empty_row_3 = pd.DataFrame({col: [None] for col in df.columns})
+
+    # Concatenate the empty rows with the original DataFrame
+    df = pd.concat([df, empty_row_1, empty_row_2,empty_row_3], ignore_index=True)
+    df.iat[2,1] = value
+    df.iat[3,1] = number_of_duplicates
+    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a") as writer:
+        sheet_name = "Duplicates"
+
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+
+def write_missing_data():
+    ...
+
 
 def run_recons(
     file_names: Tuple[str | None, str | None],
@@ -108,6 +128,7 @@ def run_recons(
     mb_creditDebit_flag: str,
     alt_recons_name: str,
 ):
+     # ------------------------- OVA -------------------
     ova_file_name = file_names[0]
     int_file_name = file_names[1]
     ova_header_lines = num_lines_of_header[0]
@@ -140,6 +161,7 @@ def run_recons(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
 
+    # ----------------------- INTEGRATOR/ DUPLICATES --------------------
     if int_file_name is not None:
         int_file_df = pd.read_excel(int_file_name)
         int_file_df = int_file_df.loc[
@@ -157,36 +179,34 @@ def run_recons(
         INT_VALUE1 = int_file_df[amount_col].sum()
         print(INT_VALUE1)
         dup, dup_val = find_duplicates(int_file_df)
+        write_duplicate_data(column_to_search='Amount',df=dup,value=dup_val,file_name=recons_file)
 
-        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
-            sheet_name = "Duplicates"
-
-            dup.to_excel(writer, sheet_name=sheet_name, index=False)
-            # TODO: Write dup_val to the sheet
-
+    # ---------------------- MISSING TRANSACTIONS -------------------------    
     if ova_file_df is not None and int_file_df is not None:
-        missing_ova_idx = get_missing_tx(
+        missing_int_tx = get_missing_tx(
             x=ova_file_df["Id"].astype("string"),
             y=int_file_df["BillerTransId"].astype("string"),
-        ).index
+        ).values
 
-        missing_int_idx = get_missing_tx(
+        missing_ova_tx = get_missing_tx(
             x=int_file_df["BillerTransId"].astype("string"),
             y=ova_file_df["Id"].astype("string"),
-        ).index
+        ).values
+        
+        for id in missing_ova_tx:
+            data= int_file_df[int_file_df['BillerTransId'] == id]
+            print(data)
+            with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
+                sheet_name = "Missing OVA Transactions"
+                data.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        missing_ova_tx = ova_file_df.iloc[missing_ova_idx]
-        missing_int_tx = int_file_df.iloc[missing_int_idx]
+        for id in missing_int_tx:
+            data = ova_file_df[ova_file_df["Id"] == id]
+            with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
+                sheet_name = "Missing Integrator Transactions"
+                data.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
-            sheet_name = "Missing OVA Transactions"
-            missing_ova_tx.to_excel(writer, sheet_name=sheet_name, index=False)
-
-        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a") as writer:
-            sheet_name = "Missing Integrator Transactions"
-            missing_int_tx.to_excel(writer, sheet_name=sheet_name, index=False)
-
-            # TODO: Write missing ova anbd int transactions into sheet.
+            # TODO: Write missing ova and int transactions into sheet.
 
 
 def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
@@ -235,7 +255,7 @@ if __name__ == "__main__":
     print(GIPdate)
 
     run_recons(
-        ("KR MTN Credit_24 Oct_23.xlsx", "KR MTN Disb_mBase_24 Oct_23.xlsx"),
+        ("MTN Prompt_13 Oct_23.xlsx", "Metabase_13 Oct_23.xlsx"),
         num_lines_of_header=(0, 0),
         mb_service_name="MTN OVA",
         mb_creditDebit_flag="C",
