@@ -192,19 +192,16 @@ def run_recons(
             x=int_file_df["BillerTransId"].astype("string"),
             y=ova_file_df["Id"].astype("string"),
         ).values
-        
-        for id in missing_ova_tx:
-            data= int_file_df[int_file_df['BillerTransId'] == id]
-            print(data)
-            with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
-                sheet_name = "Missing OVA Transactions"
-                data.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        for id in missing_int_tx:
-            data = ova_file_df[ova_file_df["Id"] == id]
-            with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
-                sheet_name = "Missing Integrator Transactions"
-                data.to_excel(writer, sheet_name=sheet_name, index=False)
+        data = int_file_df[int_file_df['BillerTransId'].isin(missing_ova_tx)]
+        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
+            sheet_name = "Missing OVA Transactions"
+            data.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        data = ova_file_df[ova_file_df["Id"].isin(missing_int_tx)]
+        with pd.ExcelWriter(recons_file, engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
+            sheet_name = "Missing Integrator Transactions"
+            data.to_excel(writer, sheet_name=sheet_name, index=False)
 
             # TODO: Write missing ova and int transactions into sheet.
 
