@@ -1,6 +1,7 @@
 # version 2.0.0
 import pandas as pd
 from typing import Literal, Tuple
+from openpyxl import load_workbook
 
 # from dateTime import yesterday, GIPdate, current_month, recons_yesterday
 from datetime import datetime
@@ -8,24 +9,90 @@ from datetime import date
 from datetime import timedelta
 import os
 
-tx_id_col_names = ["integratorTransId", "IntegratorTransId","Transaction Id","TransId","External Transaction Id","BillerTransId","Id","External Payment Request â†’ Institution Trans ID","Merchant Transaction Reference","REMARKS2","External Payment Request → Institution Trans ID",'Order Code','Order ID']
-amount_col_names = ["Amount", "amount","Paid in","Paid In","Withdrawn","AMOUNT",'Amount ($)',"Actual Amount ($)","Transaction Amount (GHC.)","TRANSACTION_AMOUNT",'Transaction Amount (amount only)',"Order Amount (amount only)",'Real Total']
+tx_id_col_names = [
+    "integratorTransId",
+    "IntegratorTransId",
+    "Transaction Id",
+    "TransId",
+    "External Transaction Id",
+    "BillerTransId",
+    "Id",
+    "External Payment Request â†’ Institution Trans ID",
+    "Merchant Transaction Reference",
+    "REMARKS2",
+    "External Payment Request → Institution Trans ID",
+    "Order Code",
+    "Order ID",
+]
+amount_col_names = [
+    "Amount",
+    "amount",
+    "Paid in",
+    "Paid In",
+    "Withdrawn",
+    "AMOUNT",
+    "Amount ($)",
+    "Actual Amount ($)",
+    "Transaction Amount (GHC.)",
+    "TRANSACTION_AMOUNT",
+    "Transaction Amount (amount only)",
+    "Order Amount (amount only)",
+    "Real Total",
+]
+
+
 def check_for_file(file_name):
+    # This function is called when calling the run_recons fucntion.
+    # It checks if a particular file can be found in the directory and returns the file name else returns None
     if file_name in os.listdir():
         return file_name
     else:
         return None
-    
+
+
 def get_ova_id_col(df: pd.DataFrame):
-    id_names = ["integratorTransId", "IntegratorTransId","Transaction Id","TransId","External Transaction Id","BillerTransId","Id","External Payment Request â†’ Institution Trans ID","Merchant Transaction Reference","REMARKS2","External Payment Request → Institution Trans ID"]
+    # This function looks through a given dataframe(specifically the ova df) and returns the transaction id name for that particular channel
+    id_names = [
+        "integratorTransId",
+        "IntegratorTransId",
+        "Transaction Id",
+        "TransId",
+        "External Transaction Id",
+        "BillerTransId",
+        "Id",
+        "External Payment Request â†’ Institution Trans ID",
+        "Merchant Transaction Reference",
+        "REMARKS2",
+        "External Payment Request → Institution Trans ID",
+        "Order Code",
+        "Order ID",
+    ]
     for id in id_names:
         if id in df:
             return id
+
+
 def get_int_id_col(df: pd.DataFrame):
-    id_names = ["integratorTransId", "IntegratorTransId","Transaction Id","TransId","External Transaction Id","BillerTransId","Id","External Payment Request â†’ Institution Trans ID","Merchant Transaction Reference","REMARKS2","External Payment Request → Institution Trans ID"]
+    # See get_ova_id_col function
+    id_names = [
+        "integratorTransId",
+        "IntegratorTransId",
+        "Transaction Id",
+        "TransId",
+        "External Transaction Id",
+        "BillerTransId",
+        "Id",
+        "External Payment Request â†’ Institution Trans ID",
+        "Merchant Transaction Reference",
+        "REMARKS2",
+        "External Payment Request → Institution Trans ID",
+        "Order Code",
+        "Order ID",
+    ]
     for id in id_names:
         if id in df:
             return id
+
 
 def get_date(
     date: date, format: Literal["gip"] | Literal["normal"] | Literal["recons"]
@@ -70,21 +137,44 @@ def get_date(
     if format == "gip":
         return date.strftime("%Y%m%d")  # Output date in format: 20231201
     elif format == "recons":
-        return date.strftime("%Y-%m-%d")
+        return date.strftime("%Y-%m-%d")  # Output data in recons: 2023-01-01
     else:
         return date.strftime("%-d %b_%y")  # Output date in format: 1_Jan_23
 
+
 def get_write_double_ova_val(
-        ova_files: Tuple[str | None, str | None],
-        num_lines_of_header: Tuple[int, int],
-        alt_recons_name: str,
-        file_output_name: str
-        ):
-    try:
-        ova_df1 = pd.read_excel(ova_files[0],skiprows=num_lines_of_header[0])
-        ova_df2 = pd.read_excel(ova_files[1],skiprows=num_lines_of_header[1])
+    ova_files: Tuple[str | None, str | None],
+    num_lines_of_header: Tuple[int, int],
+    alt_recons_name: str,
+    file_output_name: str,
+):
+    """
+    # Note: This function is only used in BB MIG recons.
+
+    The get_write_double_ova_val function processes data from two OVA files, extracts relevant information, and generates a consolidated report.
+    It also outputs the processed data into a new Excel file for further analysis.
+
+    Parameters
+    ----------
+        -ova_files (Tuple[str | None, str | None]): A tuple containing the file paths of the two OVA files. If a file path is None,the function processes the available file.
+        -num_lines_of_header (Tuple[int, int]): A tuple containing the number of lines to skip as headers for each OVA file.
+        -alt_recons_name (str): A string representing an alternative name for the reconciliation file.
+        -file_output_name (str): A string representing the name of the output file.
+
+    Process
+    -------
+        -The function reads the data from the two OVA files into separate DataFrames (ova_df1 and ova_df2).
+        -It calculates the total volume and value of the OVA transactions by summing the relevant columns.
+        -The function prints the OVA volume and value for analysis.
+        -The processed data from the first OVA file is written into a new Excel file.
+        -If one of the OVA files is missing (None), the function processes the available file and returns the name of the generated reconciliation file.
+    """
+    if len(ova_files) == 2:
+        ova_df1 = pd.read_excel(ova_files[0], skiprows=num_lines_of_header[0])
+        ova_df2 = pd.read_excel(ova_files[1], skiprows=num_lines_of_header[1])
 
         ova_volume = len(ova_df1) + len(ova_df2)
+        ova_volumes[21] = ova_volume
         recons_file = (
             f"{alt_recons_name} - Recons.xlsx"
             if ova_files[0] is None
@@ -102,8 +192,8 @@ def get_write_double_ova_val(
                 if not ova_df2[name].isna().all():
                     df2_amount_col = name
                     break
-        
         ova_value = ova_df1[df1_amount_col].sum() + ova_df2[df2_amount_col].sum()
+        ova_values[21] = ova_value
         print(f"{file_output_name} OVA VOLUME : {ova_volume}")
         print(f"{file_output_name} OVA VALUE : {ova_value}")
 
@@ -113,13 +203,14 @@ def get_write_double_ova_val(
             ova_df1.to_excel(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
-    except ValueError:            
+    if None in ova_files:
         ova_files = tuple(item for item in ova_files if item is not None)
-        ova_df1 = pd.read_excel(ova_files[0],skiprows=num_lines_of_header[0])
+        ova_df1 = pd.read_excel(ova_files[0], skiprows=num_lines_of_header[0])
         ova_volume = len(ova_df1)
+        ova_volumes[21] = ova_volume
 
         if ova_files[0] is not None:
-            recons_file = (f"{ova_files[0][:-5]} - Recons.xlsx")
+            recons_file = f"{ova_files[0][:-5]} - Recons.xlsx"
         else:
             recons_file = ""
 
@@ -129,8 +220,9 @@ def get_write_double_ova_val(
                 if not ova_df1[name].isna().all():
                     amount_col = name
                     break
-        
+
         ova_value = ova_df1[amount_col].sum()
+        ova_values[21] = ova_value
         print(f"{file_output_name} OVA VOLUME : {ova_volume}")
         print(f"{file_output_name} OVA VALUE : {ova_value}")
 
@@ -140,19 +232,23 @@ def get_write_double_ova_val(
             ova_df1.to_excel(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
-    return recons_file
+        return recons_file
+    else:
+        pass
+
 
 def get_write_double_int_val(
-        int_files: Tuple[str | None, str | None],
-        num_lines_of_header: Tuple[int, int],
-        alt_recons_name: str,
-        file_output_name: str,
-        recons_file: str
-        ):
+    int_files: Tuple[str | None, str | None],
+    num_lines_of_header: Tuple[int, int],
+    alt_recons_name: str,
+    file_output_name: str,
+    recons_file: str,
+):
+    # see get_write_double_ova_val function
     try:
-        int_df1 = pd.read_excel(int_files[0],skiprows=num_lines_of_header[0])
-        int_df2 = pd.read_excel(int_files[1],skiprows=num_lines_of_header[1])
-        int_df2 = int_df2.loc[int_df2["Status"]== "CONFIRMED"]
+        int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
+        int_df2 = pd.read_excel(int_files[1], skiprows=num_lines_of_header[1])
+        int_df2 = int_df2.loc[int_df2["Status"] == "CONFIRMED"]
 
         int_volume = len(int_df1) + len(int_df2)
 
@@ -169,20 +265,28 @@ def get_write_double_int_val(
                 if not int_df2[name].isna().all():
                     df2_amount_col = name
                     break
-        
+
         int_value = int_df1[df1_amount_col].sum() + int_df2[df2_amount_col].sum()
         print(f"{file_output_name} INT VOLUME : {int_volume}")
         print(f"{file_output_name} INT VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_df1)
-        write_duplicate_data(amount_col_name=df1_amount_col,df=dup,value=dup_val,file_name=recons_file)
+        write_duplicate_data(
+            amount_col_name=df1_amount_col, df=dup, value=dup_val, file_name=recons_file
+        )
         dup2, dup_val = find_duplicates(int_df2)
-        write_duplicate_data(amount_col_name=df2_amount_col,df=dup2,value=dup_val,file_name=recons_file,last_row_index=len(dup)+3)
-        return int_volume,int_value
+        write_duplicate_data(
+            amount_col_name=df2_amount_col,
+            df=dup2,
+            value=dup_val,
+            file_name=recons_file,
+            last_row_index=len(dup) + 3,
+        )
+        return int_volume, int_value
     except ValueError:
-        try:            
+        try:
             int_files = tuple(item for item in int_files if item is not None)
-            if int_files[0] == f"MPGS KC{yesterday}.xlsx" :
-                int_df1 = pd.read_excel(int_files[0],skiprows=num_lines_of_header[0])
+            if int_files[0] == f"MPGS KC{yesterday}.xlsx":
+                int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
                 int_volume = len(int_df1)
 
                 amount_col = ""
@@ -191,16 +295,21 @@ def get_write_double_int_val(
                         if not int_df1[name].isna().all():
                             amount_col = name
                             break
-                
+
                 int_value = int_df1[amount_col].sum()
                 print(f"{file_output_name} INT VOLUME : {int_volume}")
                 print(f"{file_output_name} INT VALUE : {int_value}")
                 dup, dup_val = find_duplicates(int_df1)
-                write_duplicate_data(amount_col_name=amount_col,df=dup,value=dup_val,file_name=recons_file)
+                write_duplicate_data(
+                    amount_col_name=amount_col,
+                    df=dup,
+                    value=dup_val,
+                    file_name=recons_file,
+                )
                 return int_volume, int_value
-            elif int_files[0] == f'MPGS_trn{yesterday}.xlsx':
-                int_df1 = pd.read_excel(int_files[0],skiprows=num_lines_of_header[0])
-                int_df1 = int_df1.loc[int_df1["Status"]== "CONFIRMED"]
+            elif int_files[0] == f"MPGS_trn{yesterday}.xlsx":
+                int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
+                int_df1 = int_df1.loc[int_df1["Status"] == "CONFIRMED"]
                 int_volume = len(int_df1)
 
                 amount_col = ""
@@ -209,17 +318,71 @@ def get_write_double_int_val(
                         if not int_df1[name].isna().all():
                             amount_col = name
                             break
-                
+
                 int_value = int_df1[amount_col].sum()
                 print(f"{file_output_name} INT VOLUME : {int_volume}")
                 print(f"{file_output_name} INT VALUE : {int_value}")
                 dup, dup_val = find_duplicates(int_df1)
-                write_duplicate_data(amount_col_name=amount_col,df=dup,value=dup_val,file_name=recons_file)
-                return int_volume, int_value           
+                write_duplicate_data(
+                    amount_col_name=amount_col,
+                    df=dup,
+                    value=dup_val,
+                    file_name=recons_file,
+                )
+                return int_volume, int_value
         except:
-            print("MPGS INT FILE NOT FOUND")
+            print("INT FILE NOT FOUND")
 
 
+def update_recons_sheet():
+    fwb = load_workbook("Reconciliations 2023.xlsx")
+
+    if datetime.today().day == 1:
+        today = date.today()
+        prev_month = (
+            today.replace(month=today.month - 1)
+            if today.month > 1
+            else today.replace(month=12, year=today.year - 1)
+        )
+        prev_month_abbr = prev_month.strftime("%b").upper()
+        fsheet = fwb[prev_month_abbr]
+        fwb.active = fwb[prev_month_abbr]
+    else:
+        fsheet = fwb[current_month]
+        fwb.active = fwb[current_month]
+
+    first_col = fwb.active.min_column  # type: ignore
+    last_col = fwb.active.max_column  # type: ignore
+    first_row = fwb.active.min_row  # type: ignore
+    last_row = fwb.active.max_row  # type: ignore
+
+    start_row = 0
+    for row in range(first_row + 1, last_row + 1):
+        if str(fsheet["A" + str(row)].value) == recons_yesterday:
+            start_row = row
+            break
+
+    for row in range(0, 11):
+        fsheet["E" + str(start_row)].value = ova_volumes[row]
+        fsheet["F" + str(start_row)].value = abs(ova_values[row])
+        fsheet["G" + str(start_row)].value = int_volumes[row]
+        fsheet["H" + str(start_row)].value = abs(int_values[row])
+        fsheet["M" + str(start_row)].value = dup_volumes[row]
+        fsheet["N" + str(start_row)].value = abs(dup_values[row])
+
+        start_row += 1
+    start_row += 10
+
+    for row in range(21, 29):
+        fsheet["E" + str(start_row)].value = ova_volumes[row]
+        fsheet["F" + str(start_row)].value = abs(ova_values[row])
+        fsheet["G" + str(start_row)].value = int_volumes[row]
+        fsheet["H" + str(start_row)].value = abs(int_values[row])
+        fsheet["M" + str(start_row)].value = dup_volumes[row]
+        fsheet["N" + str(start_row)].value = abs(dup_values[row])
+        start_row += 1
+    fwb.close()
+    fwb.save("Reconciliations 2023.xlsx")
 
 
 def find_duplicates(int_df: pd.DataFrame):
@@ -235,7 +398,6 @@ def find_duplicates(int_df: pd.DataFrame):
             if not int_df[name].isna().all():
                 amount_col = name
                 break
-
 
     if trans_id_col == "":
         raise Exception("No transaction id column found")
@@ -257,7 +419,11 @@ def find_duplicates(int_df: pd.DataFrame):
 
 
 def write_duplicate_data(
-    amount_col_name: str, df: pd.DataFrame, value: float, file_name: str, last_row_index=None
+    amount_col_name: str,
+    df: pd.DataFrame,
+    value: float,
+    file_name: str,
+    last_row_index=None,
 ):
     if df.empty:
         return
@@ -265,7 +431,10 @@ def write_duplicate_data(
     amount_column = df.columns.get_loc(amount_col_name)
     if last_row_index is None:
         last_row_index = df.shape[0]
-    empty_rows = pd.DataFrame({col: [None] for col in df.columns}, index=range(last_row_index, last_row_index + 3))
+    empty_rows = pd.DataFrame(
+        {col: [None] for col in df.columns},
+        index=range(last_row_index, last_row_index + 3),
+    )
     empty_rows.iat[-2, amount_column] = value
     empty_rows.iat[-1, amount_column] = number_of_duplicates
 
@@ -278,7 +447,11 @@ def write_duplicate_data(
 
 
 def write_missing_ova_data(
-    amount_col_name: str, df: pd.DataFrame, value: float, file_name: str, last_row_index=None
+    amount_col_name: str,
+    df: pd.DataFrame,
+    value: float,
+    file_name: str,
+    last_row_index=None,
 ):
     if df.empty:
         return
@@ -286,7 +459,10 @@ def write_missing_ova_data(
     if last_row_index is None:
         last_row_index = df.shape[0]
     number_of_tx = len(df)
-    empty_rows = pd.DataFrame({col: [None] for col in df.columns}, index=range(last_row_index, last_row_index + 3))
+    empty_rows = pd.DataFrame(
+        {col: [None] for col in df.columns},
+        index=range(last_row_index, last_row_index + 3),
+    )
     amount_column = df.columns.get_loc(amount_col_name)
     # Concatenate the empty rows with the original DataFrame
     df = pd.concat([df, empty_rows], ignore_index=True)
@@ -299,7 +475,11 @@ def write_missing_ova_data(
 
 
 def write_missing_int_data(
-    amount_col_name: str, df: pd.DataFrame, value: float, file_name: str, last_row_index=None
+    amount_col_name: str,
+    df: pd.DataFrame,
+    value: float,
+    file_name: str,
+    last_row_index=None,
 ):
     if df.empty:
         return
@@ -307,7 +487,10 @@ def write_missing_int_data(
     if last_row_index is None:
         last_row_index = df.shape[0]
     number_of_tx = len(df)
-    empty_rows = pd.DataFrame({col: [None] for col in df.columns}, index=range(last_row_index, last_row_index + 3))
+    empty_rows = pd.DataFrame(
+        {col: [None] for col in df.columns},
+        index=range(last_row_index, last_row_index + 3),
+    )
     amount_column = df.columns.get_loc(amount_col_name)
     # Concatenate the empty rows with the original DataFrame
     df = pd.concat([df, empty_rows], ignore_index=True)
@@ -324,15 +507,22 @@ def run_recons(
     num_lines_of_header: Tuple[int, int],
     alt_recons_name: str,
     file_output_name: str,
+    ova_id: str,
+    int_id: str,
+    alt_ova_id: str,
+    alt_int_id: str | None = None,
     *,
     mb_service_name: str | None = None,
     mb_creditDebit_flag: str | None = None,
-    mb_status_flag: str | None = None
+    mb_status_flag: str | None = None,
+    ova_status_flag: str | None = None,
+    ova_status_col: str | None = None,
+    list_index: int,
 ):
-    service_name_header= ""
-    creditDebit_header= ""
-    service_name_headers = ["ServiceName","serviceName"]
-    creditDebit_headers=["creditDebitFlag","CreditDebitFlag","DEBITCREDIT"]
+    service_name_header = ""
+    creditDebit_header = ""
+    service_name_headers = ["ServiceName", "serviceName"]
+    creditDebit_headers = ["creditDebitFlag", "CreditDebitFlag", "DEBITCREDIT"]
     # -------------------- OVA -------------------
     ova_file_name = file_names[0]  # name of the ova file
     int_file_name = file_names[1]  # name of the integrator file
@@ -347,15 +537,20 @@ def run_recons(
     int_file_df: pd.DataFrame | None = None
 
     if ova_file_name is not None:
-
         # put the data into a dataframe
-        ova_file_df = pd.read_excel(ova_file_name,skiprows=ova_header_lines)
-        ova_id_name = get_ova_id_col(ova_file_df)
+        ova_file_df = pd.read_excel(ova_file_name, skiprows=ova_header_lines)
+        ova_id_name = get_ova_id_col(df=ova_file_df)
+        if ova_status_flag is not None:
+            ova_file_df = ova_file_df.loc[
+                ova_file_df[ova_status_col] == ova_status_flag
+            ]
+
         for name in creditDebit_headers:
             if name in ova_file_df.columns:
-                    ova_file_df = ova_file_df[ova_file_df[name]== "C"]
-                    break 
+                ova_file_df = ova_file_df[ova_file_df[name] == "C"]
+                break
         ova_volume = len(ova_file_df)
+        ova_volumes[list_index] = ova_volume
         print(
             f"{file_output_name}_OVA_Volume: {ova_volume}"
         )  # file_output_name is the name that shows for each channel as the script runs
@@ -367,6 +562,7 @@ def run_recons(
                     break  # check which of the formats the amount column is written in
 
         ova_value = ova_file_df[amount_col].sum()
+        ova_values[list_index] = ova_value
 
         print(f"{file_output_name} OVA_VALUE : {ova_value}")
         with pd.ExcelWriter(
@@ -376,32 +572,48 @@ def run_recons(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
 
-    
-
     # ----------------------- INTEGRATOR/ DUPLICATES --------------------
     if int_file_name is not None:
-        int_file_df = pd.read_excel(int_file_name,skiprows=int_header_lines)
-        int_id_name = get_int_id_col(int_file_df)
+        int_file_df = pd.read_excel(int_file_name, skiprows=int_header_lines)
+        int_id_name = get_int_id_col(df=int_file_df)
         for name in service_name_headers:
             if name in int_file_df.columns:
                 if not int_file_df[name].isna().all():
                     service_name_header = name
-                    break 
+                    break
         for name in creditDebit_headers:
             if name in int_file_df.columns:
                 if not int_file_df[name].isna().all():
                     creditDebit_header = name
-                    break     
-        if mb_service_name is not None and mb_creditDebit_flag is not None and mb_status_flag is None:
-            int_file_df = int_file_df.loc[(int_file_df[service_name_header] == mb_service_name) & (int_file_df[creditDebit_header] == mb_creditDebit_flag)]
-        elif mb_service_name is not None and mb_creditDebit_flag is None and mb_status_flag is None:
-            int_file_df = int_file_df.loc[int_file_df[service_name_header] == mb_service_name]
-        if mb_status_flag is not None and mb_service_name is None and mb_creditDebit_flag is None:
+                    break
+        if (
+            mb_service_name is not None
+            and mb_creditDebit_flag is not None
+            and mb_status_flag is None
+        ):
+            int_file_df = int_file_df.loc[
+                (int_file_df[service_name_header] == mb_service_name)
+                & (int_file_df[creditDebit_header] == mb_creditDebit_flag)
+            ]
+        elif (
+            mb_service_name is not None
+            and mb_creditDebit_flag is None
+            and mb_status_flag is None
+        ):
+            int_file_df = int_file_df.loc[
+                int_file_df[service_name_header] == mb_service_name
+            ]
+        if (
+            mb_status_flag is not None
+            and mb_service_name is None
+            and mb_creditDebit_flag is None
+        ):
             int_file_df = int_file_df.loc[int_file_df["Status"] == mb_status_flag]
         if int_file_df.empty:
             print(f"Problem in {ova_file_name}. Check conditional headers")
             return
         int_volume = len(int_file_df)
+        int_volumes[list_index] = int_volume
         print(f"{file_output_name}_INT_Volume: {str(int_volume)}")
         amount_col = ""
         for name in amount_col_names:
@@ -410,26 +622,38 @@ def run_recons(
                     amount_col = name
                     break
         int_value = int_file_df[amount_col].sum()
+        int_values[list_index] = int_value
         print(f"{file_output_name} INT_VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_file_df)
+        print(f"Number of duplicates: {dup_val}")
+        dup_volumes[list_index] = len(dup)
+        dup_values[list_index] = dup_val
+
         write_duplicate_data(
             amount_col_name=amount_col, df=dup, value=dup_val, file_name=recons_file
         )
 
     # ---------------------- MISSING TRANSACTIONS -------------------------
     if ova_file_df is not None and int_file_df is not None:
-        ova_id_name =get_ova_id_col(ova_file_df)
-        int_id_name = get_int_id_col(int_file_df)
-        ova_file_df = ova_file_df.apply(lambda x: x.astype(str).str.lower())
-        int_file_df = int_file_df.apply(lambda x: x.astype(str).str.lower())
+        ova_id_name = get_ova_id_col(df=ova_file_df)
+        int_id_name = get_int_id_col(df=int_file_df)
+        ova_file_df[ova_id_name] = ova_file_df[ova_id_name].astype(str).str.lower()
+        int_file_df[int_id_name] = int_file_df[int_id_name].astype(str).str.lower()
+
         missing_int_tx = get_missing_tx(
             x=ova_file_df[ova_id_name].astype("string"),
             y=int_file_df[int_id_name].astype("string"),
+            alt_x=ova_file_df[alt_ova_id].astype("string"),
+            alt_y=int_file_df[alt_int_id].astype("string"),
         ).values
+
         missing_ova_tx = get_missing_tx(
             x=int_file_df[int_id_name].astype("string"),
             y=ova_file_df[ova_id_name].astype("string"),
+            alt_x=int_file_df[alt_int_id].astype("string"),
+            alt_y=ova_file_df[alt_ova_id].astype("string"),
         ).values
+
         int_amount_col = ""
         for name in amount_col_names:
             if name in int_file_df.columns:
@@ -444,14 +668,21 @@ def run_recons(
                     ova_amount_col = name
                     break
         ova_file_df[ova_amount_col] = ova_file_df[ova_amount_col].astype("float")
-        int_file_df[int_amount_col]  = int_file_df[int_amount_col].astype("float")
+        int_file_df[int_amount_col] = int_file_df[int_amount_col].astype("float")
         missing_ova_amount_name = ova_amount_col
         missing_int_amount_name = int_amount_col
 
-        missing_ova_data = int_file_df[int_file_df[int_id_name].isin(missing_ova_tx)]
+        missing_ova_data = int_file_df[
+            int_file_df[int_id_name].astype("string").isin(missing_ova_tx)
+            | int_file_df[alt_int_id].astype("string").isin(missing_ova_tx)
+        ]
         missing_ova_value = missing_ova_data[missing_int_amount_name].sum()
 
-        missing_int_data = ova_file_df[ova_file_df[ova_id_name].isin(missing_int_tx)]
+        missing_int_data = ova_file_df[
+            ova_file_df[ova_id_name].astype("string").isin(missing_int_tx)
+            | ova_file_df[alt_ova_id].astype("string").isin(missing_int_tx)
+        ]
+
         missing_int_value = missing_int_data[missing_ova_amount_name].sum()
 
         write_missing_ova_data(
@@ -467,26 +698,27 @@ def run_recons(
             value=missing_int_value,
         )
 
+
 def gip_custom(
-ova_files: Tuple[str | None, str | None],
-int_file: str,
-num_lines_of_header: Tuple[int, int],
-alt_recons_name: str,
-file_output_name: str,
+    ova_files: Tuple[str | None, str | None],
+    int_file: str | None,
+    num_lines_of_header: Tuple[int, int],
+    alt_recons_name: str,
+    file_output_name: str,
 ):
-# ------------------------ OVA ------------------------
+    # ------------------------ OVA ------------------------
     recons_file = (
         f"{alt_recons_name} - Recons.xlsx"
         if ova_files[0] is None
         else f"{ova_files[0][:-5]} - Recons.xlsx"
-)
+    )
     ova_files = tuple(item for item in ova_files if item is not None)
     if len(ova_files) == 2:
         ova_df1 = pd.read_excel(ova_files[0])
         ova_df2 = pd.read_excel(ova_files[1])
 
         ova_volume = len(ova_df1) + len(ova_df2)
-
+        ova_volumes[10] = ova_volume
         amount_col = ""
         for name in amount_col_names:
             if name in ova_df1.columns:
@@ -494,6 +726,7 @@ file_output_name: str,
                     amount_col = name
                     break
         ova_value = ova_df1[amount_col].sum() + ova_df2[amount_col].sum()
+        ova_values[10] = ova_value
         print(f"GIP OVA VOLUME : {ova_volume}")
         print(f"GIP OVA VALUE : {ova_value}")
 
@@ -503,63 +736,74 @@ file_output_name: str,
             ova_df1.to_excel(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
-# ---------------------------- INT -------------------------
-    int_df = pd.read_excel(int_file)
-    int_volume = len(int_df)
-    amount_col = ""
-    for name in amount_col_names:
-        if name in int_df.columns:
-            if not int_df[name].isna().all():
-                amount_col = name
-                break
-    
-    int_value = int_df[amount_col].sum()
-    print(f"GIP INT VOLUME {int_volume}")
-    print(f"GIP INT VALUE {int_value}")
-    dup, dup_val = find_duplicates(int_df)
-    write_duplicate_data(amount_col_name=amount_col,df=dup,value=dup_val,file_name=recons_file)
+    # ---------------------------- INT -------------------------
+    if int_file is not None:
+        int_df = pd.read_excel(int_file)
+        int_volume = len(int_df)
+        int_volumes[10] = int_volume
+        amount_col = ""
+        for name in amount_col_names:
+            if name in int_df.columns:
+                if not int_df[name].isna().all():
+                    amount_col = name
+                    break
+
+        int_value = int_df[amount_col].sum()
+        int_values[10] = int_value
+        print(f"GIP INT VOLUME {int_volume}")
+        print(f"GIP INT VALUE {int_value}")
+        dup, dup_val = find_duplicates(int_df)
+        write_duplicate_data(
+            amount_col_name=amount_col, df=dup, value=dup_val, file_name=recons_file
+        )
 
 
 def bb_mig_custom(
     ova_files: Tuple[str | None, str | None],
-    int_file: str,
+    int_file: str | None,
     num_lines_of_header: Tuple[int, int],
     alt_recons_name: str,
-    file_output_name: str,    
+    file_output_name: str,
 ):
     # ------------------------ OVA ------------------------
-    recons_file= get_write_double_ova_val(ova_files=ova_files,num_lines_of_header=num_lines_of_header,file_output_name="BB MIG",alt_recons_name="BB MIG")
-    
+    recons_file = None
+    if ova_files[0] is not None and ova_files[1] is not None:
+        recons_file = get_write_double_ova_val(
+            ova_files=ova_files,
+            num_lines_of_header=num_lines_of_header,
+            file_output_name="BB MIG",
+            alt_recons_name="BB MIG",
+        )
 
-# ---------------------------- INT -------------------------
-    int_df = pd.read_excel(int_file)
-    int_df = int_df.loc[int_df["Status"]== "CONFIRMED"]
-    int_volume = len(int_df)
+    # ---------------------------- INT -------------------------
+    if recons_file is not None:
+        int_df = pd.read_excel(int_file)
+        int_df = int_df.loc[int_df["Status"] == "CONFIRMED"]
+        int_volume = len(int_df)
+        int_volumes[21] = int_volume
 
-    amount_col = ""
-    for name in amount_col_names:
-        if name in int_df.columns:
-            if not int_df[name].isna().all():
-                amount_col = name
-                break
-    int_value = int_df[amount_col].sum()
-    print(f"BB MIG INT VOLUME {int_volume}")
-    print(f"BB MIG INT VALUE {int_value}")
-    dup, dup_val = find_duplicates(int_df)
-    write_duplicate_data(amount_col_name=amount_col,df=dup,value=dup_val,file_name=recons_file)
+        amount_col = ""
+        for name in amount_col_names:
+            if name in int_df.columns:
+                if not int_df[name].isna().all():
+                    amount_col = name
+                    break
+        int_value = int_df[amount_col].sum()
+        int_values[21] = int_value
+        print(f"BB MIG INT VOLUME {int_volume}")
+        print(f"BB MIG INT VALUE {int_value}")
+        dup, dup_val = find_duplicates(int_df)
+        write_duplicate_data(
+            amount_col_name=amount_col, df=dup, value=dup_val, file_name=recons_file
+        )
 
-def mpgs_custom(
-    ova_files: Tuple[str | None, str | None],
-    int_files: Tuple[str|None, str|None],
-    num_lines_of_header: Tuple[int, int],
-    alt_recons_name: str,
-    file_output_name: str, 
-):
-    recons_file = get_write_double_ova_val(ova_files=ova_files,num_lines_of_header=num_lines_of_header,file_output_name=file_output_name,alt_recons_name=alt_recons_name)
-    get_write_double_int_val(int_files=int_files,num_lines_of_header=num_lines_of_header,alt_recons_name=alt_recons_name,file_output_name=file_output_name,recons_file=recons_file) # type: ignore
 
-    
-def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
+def get_missing_tx(
+    x: pd.Series,
+    y: pd.Series,
+    alt_x: pd.Series,
+    alt_y: pd.Series,
+) -> pd.Series:
     """
     Returns the elements in Series 'x' that are not present in Series 'y'.
 
@@ -577,14 +821,19 @@ def get_missing_tx(x: pd.Series, y: pd.Series) -> pd.Series:
     - This function performs a check to find elements in Series 'x' that are not present in Series 'y'.
     - The resulting Series contains only the elements that are missing in 'y' while maintaining the original order from 'x'.
     """
-    x= remove_leading_zeros(x)
-    y=remove_leading_zeros(y)
-    missing = ~x.isin(y)
-    return x[missing]
+    x = remove_leading_zeros(x)
+    y = remove_leading_zeros(y)
+    missing = (~x.isin(y)) & (~alt_x.isin(alt_y))
+    x_missing = x[missing].combine_first(alt_x[missing])
+    x_missing[(x_missing == "nan")] = alt_x[missing]
+    return x_missing
+
 
 def remove_leading_zeros(series):
     # Remove leading zeros from the series
-    return series.str.replace(r'^0+', '', regex=True)
+    return series.str.replace(r"^0+", "", regex=True)
+
+
 if __name__ == "__main__":
     prompt = input("Recons for yesterday? (Y/N) :")
     if prompt.upper() == "Y":
@@ -607,111 +856,268 @@ if __name__ == "__main__":
 
     GIPdate = get_date(date=date_ + timedelta(1), format="gip")
     print(GIPdate)
-#TODO: find a way to make code select the service name and credit debit flag  on its own
-    # ova_volumes = []
+    ova_volumes = [0] * 29
+    ova_values = [0] * 29
+    int_volumes = [0] * 29
+    int_values = [0] * 29
+    dup_volumes = [0] * 29
+    dup_values = [0.00] * 29
+    list_index = 0
     # run_recons(
-    #     (check_for_file(f"MIGS 01{yesterday}.xlsx"), check_for_file(f"MIGS 01 Metabase{yesterday}.xlsx")),
+    #     (
+    #         check_for_file(f"MIGS 01{yesterday}.xlsx"),
+    #         check_for_file(f"MIGS 01 Metabase{yesterday}.xlsx"),
+    #     ),
     #     num_lines_of_header=(3, 0),
     #     alt_recons_name=f"MIGS 01{yesterday}",
-    #     file_output_name="MIGS_01",   
+    #     file_output_name="MIGS_01",
+    #     list_index=0,
+    #     ova_id="Merchant Transaction Reference",
+    #     int_id="External Payment Request â†’ Institution Trans ID",
+    #     alt_int_id="Institution Trans ID",
+    #     alt_ova_id="Transaction ID",
     # )
 
     # run_recons(
-    #     (check_for_file(f"MTN Prompt{yesterday}.xlsx"), check_for_file(f"Metabase{yesterday}.xlsx")),
+    #     (
+    #         check_for_file(f"MTN Prompt{yesterday}.xlsx"),
+    #         check_for_file(f"Metabase{yesterday}.xlsx"),
+    #     ),
     #     num_lines_of_header=(0, 0),
-    #     mb_service_name="MTN OVA",
+    #     mb_service_name="MTN Money MADAPI",
     #     mb_creditDebit_flag="C",
     #     alt_recons_name=f"MTN Prompt{yesterday}",
     #     file_output_name="MTN Prompt",
+    #     list_index=1,
+    #     ova_id="External Transaction Id",
+    #     int_id="integratorTransId",
+    #     alt_int_id="BillerTransId",
+    #     alt_ova_id="Id",
     # )
-    
+
     # run_recons(
-    #     (check_for_file(f"MTN Cashout{yesterday}.xlsx"),check_for_file(f"Metabase{yesterday}.xlsx")),
-    #     num_lines_of_header= (0,0),
+    #     (
+    #         check_for_file(f"MTN Cashout{yesterday}.xlsx"),
+    #         check_for_file(f"Metabase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
     #     alt_recons_name="MTN Cashout",
     #     file_output_name="MTN_PORTAL",
-    #     mb_service_name="MTN OVA", #TODO: USE MADAPI FOR CURRENT DATA
-    #     mb_creditDebit_flag="D"
+    #     mb_service_name="MTN Money MADAPI",
+    #     mb_creditDebit_flag="D",
+    #     list_index=3,
+    #     ova_id="External Transaction Id",
+    #     int_id="integratorTransId",
+    #     alt_int_id="BillerTransId",
+    #     alt_ova_id="Id",
     # )
     # run_recons(
-    #     (check_for_file(f"AirtelTigo Cashout{yesterday}.xlsx"),check_for_file(f"Metabase{yesterday}.xlsx")),
-    #     num_lines_of_header= (4,0),
+    #     (
+    #         check_for_file(f"AirtelTigo Cashout{yesterday}.xlsx"),
+    #         check_for_file(f"Metabase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(4, 0),
     #     alt_recons_name="AirtelTigo Cashout",
     #     file_output_name="AIRTEL_CASHOUT",
     #     mb_service_name="AirtelMoney_Slydepay",
-    #     mb_creditDebit_flag="D"
+    #     mb_creditDebit_flag="D",
+    #     list_index=5,
+    #     ova_id="Transaction Id",
+    #     int_id="integratorTransId",
+    #     alt_int_id="integratorTransId",
+    #     alt_ova_id="Transaction Id",
     # )
     # run_recons(
-    #     (check_for_file(f"Vodafone Cashin{yesterday}.xlsx"),check_for_file(f"Metabase{yesterday}.xlsx")),
-    #     num_lines_of_header= (5,0),
+    #     (
+    #         check_for_file(f"Vodafone Cashin{yesterday}.xlsx"),
+    #         check_for_file(f"Metabase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(5, 0),
     #     alt_recons_name="Vodafone Cashin",
     #     file_output_name="VODA CASHIN",
     #     mb_service_name="Vodafone Cash",
-    #     mb_creditDebit_flag="C"
-    #     #TODO: GET CODE TO EXTRACT IDS FROM OTHER COLUMN AND DO YOUR THING
+    #     mb_creditDebit_flag="C",
+    #     list_index=6,
+    #     ova_id="TransId",
+    #     int_id="integratorTransId",
+    #     alt_int_id="BillerTransId",
+    #     alt_ova_id="Receipt No.",
     # )
     # run_recons(
-    #     (check_for_file(f"Vodafone Cashout{yesterday}.xlsx"),check_for_file(f"Metabase{yesterday}.xlsx")),
-    #     num_lines_of_header= (5,0),
+    #     (
+    #         check_for_file(f"Vodafone Cashout{yesterday}.xlsx"),
+    #         check_for_file(f"Metabase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(5, 0),
     #     alt_recons_name="Vodafone Cashout",
     #     file_output_name="VODA CASHOUT",
     #     mb_creditDebit_flag="D",
-    #     mb_service_name="Vodafone Cash"
+    #     mb_service_name="Vodafone Cash",
+    #     list_index=7,
+    #     ova_id="TransId",
+    #     int_id="integratorTransId",
+    #     alt_int_id="BillerTransId",
+    #     alt_ova_id="Receipt No.",
     # )
     # run_recons(
-    #     (check_for_file(f"KR MTN Credit{yesterday}.xlsx"),check_for_file(f"KR MTN Disb_mBase{yesterday}.xlsx")),
-    #     num_lines_of_header= (0,0),
-    #     alt_recons_name="KR MTN Credit",
-    #     file_output_name="MTN_KR_Credit",
+    #     (
+    #         check_for_file(f"Stanbic FI Credit{yesterday}.xlsx"),
+    #         check_for_file(f"Stanbic FI Credit Metabase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="Stanbic FI Credit",
+    #     file_output_name="Stanbic FI CREDIT",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=8,
+    #     ova_id="REMARKS2",
+    #     int_id="External Payment Request → Institution Trans ID",
+    #     alt_int_id="External Payment Request → Institution Trans ID",
+    #     alt_ova_id="REMARKS2",
     # )
-    # run_recons(
-    #     (check_for_file(f"KR MTN Debit{yesterday}.xlsx"),check_for_file(f"KR MTN Coll_mBase{yesterday}.xlsx")),
-    #     num_lines_of_header= (0,0),
-    #     alt_recons_name="KR MTN Debit",
-    #     file_output_name="MTN_KR_Debit",
-    # )
-    # run_recons(
-    #     (check_for_file(f"KR Vodafone Cashin{yesterday}.xlsx"),check_for_file(f"KR Vodafone Coll_mBase{yesterday}.xlsx")),
-    #     num_lines_of_header= (5,0),
-    #     alt_recons_name="KR VODA Cashin",
-    #     file_output_name="Voda KR Cashin",
-    #     mb_status_flag="CONFIRMED"
+    # gip_custom(
+    #     ova_files=(
+    #         check_for_file(f"slydepay_sending_{GIPdate}'.xlsx"),
+    #         check_for_file(f"slydepay_sendingGhlink_{GIPdate}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="slydepay_sending_",
+    #     file_output_name="GIP",
+    #     int_file=check_for_file(f"GIP Metabase{yesterday}.xlsx"),
     # )
 
-    # run_recons(
-    #     (check_for_file(f"KR Vodafone Cashout{yesterday}.xlsx"),check_for_file(f"KR Vodafone Disb_mBase{yesterday}.xlsx")),
-    #     num_lines_of_header= (5,0),
-    #     alt_recons_name="KR Voda Cashout",
-    #     file_output_name="Voda KR Cashout",
-    #     mb_status_flag="CONFIRMED"
+    # bb_mig_custom(
+    #     ova_files=(
+    #         check_for_file(f"MIGS 08{yesterday}.xlsx"),
+    #         check_for_file(f"MIGS 09{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(3, 3),
+    #     alt_recons_name=f"MIGS 08{yesterday}.xlsx",
+    #     file_output_name="BB MIG",
+    #     int_file=check_for_file(f"MiGS_trn{yesterday}.xlsx"),
     # )
     run_recons(
-        (check_for_file(f"Stanbic FI Credit{yesterday}.xlsx"),check_for_file(f"Stanbic FI Credit Metabase{yesterday}.xlsx")),
-        num_lines_of_header= (0,0),
-        alt_recons_name="Stanbic FI Credit",
-        file_output_name="Stanbic FI CREDIT",
-        mb_status_flag="CONFIRMED"
+        (
+            check_for_file(f"MPGS{yesterday}.xlsx"),
+            check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="MPGS",
+        file_output_name="MPGS",
+        mb_status_flag="CONFIRMED",
+        alt_int_id="",
+        alt_ova_id="",
+        list_index=22,
+        ova_id="Order ID",
+        int_id="Transaction Id",
     )
-#     gip_custom(
-#         ova_files=(check_for_file(f"slydepay_sending_{GIPdate}'.xlsx"),check_for_file(f"slydepay_sendingGhlink_{GIPdate}.xlsx")),
-#         num_lines_of_header=(0,0),
-#         alt_recons_name="slydepay_sending_",
-#         file_output_name="GIP",
-#         int_file=f'GIP Metabase{yesterday}.xlsx'
-#    )
-    # bb_mig_custom(
-    #     ova_files=(check_for_file(f'MIGS 08{yesterday}.xlsx'),check_for_file(f'MIGS 09{yesterday}.xlsx')),
-    #     num_lines_of_header=(3,3),
-    #     alt_recons_name=f'MIGS 08{yesterday}.xlsx',
-    #     file_output_name="BB MIG",
-    #     int_file=f'MiGS_trn{yesterday}.xlsx'
+    run_recons(
+        (
+            check_for_file(f"Quipu{yesterday}.xlsx"),
+            check_for_file(f"MPGS KC{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="Quipu",
+        file_output_name="QUIPU",
+        ova_status_flag="SUCCESS",
+        ova_status_col="Status",
+        list_index=22,
+        ova_id="Order Code",
+        int_id="Universal Transaction Reference",
+        alt_int_id="Universal Transaction Reference",
+        alt_ova_id="Order Code",
+    )
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR MTN Credit{yesterday}.xlsx"),
+    #         check_for_file(f"KR MTN Disb_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="KR MTN Credit",
+    #     file_output_name="MTN_KR_Credit",
+    #     list_index=23,
+    #     ova_id="External Transaction Id",
+    #     int_id="IntegratorTransId",
+    #     alt_int_id="BillerTransId",
+    #     alt_ova_id="Id",
     # )
-#---------------------------
-    # mpgs_custom(
-    #     ova_files=(check_for_file(f'MPGS{yesterday}.xlsx'),check_for_file(f'Quipu{yesterday}.xlsx')),
-    #     num_lines_of_header=(0,0),
-    #     alt_recons_name=f'MPGS{yesterday}',
-    #     file_output_name="MPGS",
-    #     int_files=(check_for_file(f'MPGS KC{yesterday}.xlsx'),check_for_file(f'MPGS_trn{yesterday}.xlsx')),
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR MTN Debit{yesterday}.xlsx"),
+    #         check_for_file(f"KR MTN Coll_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="KR MTN Debit",
+    #     file_output_name="MTN_KR_Debit",
+    #     list_index=24,
+    #     ova_id="External Transaction Id",
+    #     int_id="IntegratorTransId",
+    #     alt_ova_id="Id",
+    #     alt_int_id="BillerTransId",
+    # )
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
+    #         check_for_file(f"KR AirtelTigo Coll_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="AirtelTigo Cashin",
+    #     file_output_name="AIRTEL_KR_Cashin",
+    #     ova_status_flag="Merchant Payment",
+    #     ova_status_col="Service Type",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=25,
+    #     ova_id="External Transaction Id",
+    #     int_id="Transaction Id",
+    #     alt_int_id="",
+    #     alt_ova_id="",
+    # )
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
+    #         check_for_file(f"KR AirtelTigo Disb_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name="AirtelTigo Cashout",
+    #     file_output_name="AIRTEL_KR_Cashout",
+    #     ova_status_flag="Cash in",
+    #     ova_status_col="Service Type",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=26,
+    #     ova_id="External Transaction Id",
+    #     int_id="Transaction Id",
+    #     alt_int_id="Transaction Id",
+    #     alt_ova_id="External Transaction Id",
+    # )
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR Vodafone Cashin{yesterday}.xlsx"),
+    #         check_for_file(f"KR Vodafone Coll_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(5, 0),
+    #     alt_recons_name="KR VODA Cashin",
+    #     file_output_name="Voda KR Cashin",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=27,
+    #     ova_id="TransId",
+    #     int_id="Transaction Id",
+    #     alt_int_id="Receipt No.",
+    #     alt_ova_id="Receipt No.",
     # )
 
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR Vodafone Cashout{yesterday}.xlsx"),
+    #         check_for_file(f"KR Vodafone Disb_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(5, 0),
+    #     alt_recons_name="KR Voda Cashout",
+    #     file_output_name="Voda KR Cashout",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=28,
+    #     ova_id="TransId",
+    #     int_id="Transaction Id",
+    #     alt_int_id="Receipt No.",
+    #     alt_ova_id="Receipt No.",
+    # )
+    # #---------------------------
+update_recons_sheet()
