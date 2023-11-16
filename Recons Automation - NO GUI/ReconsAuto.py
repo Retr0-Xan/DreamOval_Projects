@@ -192,7 +192,7 @@ def get_write_double_ova_val(
                 if not ova_df2[name].isna().all():
                     df2_amount_col = name
                     break
-        ova_value = ova_df1[df1_amount_col].sum() + ova_df2[df2_amount_col].sum()
+        ova_value = ova_df1[df1_amount_col].abs().sum() + ova_df2[df2_amount_col].abs().sum()
         ova_values[21] = ova_value
         print(f"{file_output_name} OVA VOLUME : {ova_volume}")
         print(f"{file_output_name} OVA VALUE : {ova_value}")
@@ -221,7 +221,7 @@ def get_write_double_ova_val(
                     amount_col = name
                     break
 
-        ova_value = ova_df1[amount_col].sum()
+        ova_value = ova_df1[amount_col].abs().sum()
         ova_values[21] = ova_value
         print(f"{file_output_name} OVA VOLUME : {ova_volume}")
         print(f"{file_output_name} OVA VALUE : {ova_value}")
@@ -266,7 +266,7 @@ def get_write_double_int_val(
                     df2_amount_col = name
                     break
 
-        int_value = int_df1[df1_amount_col].sum() + int_df2[df2_amount_col].sum()
+        int_value = int_df1[df1_amount_col].abs().sum() + int_df2[df2_amount_col].abs().sum()
         print(f"{file_output_name} INT VOLUME : {int_volume}")
         print(f"{file_output_name} INT VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_df1)
@@ -296,7 +296,7 @@ def get_write_double_int_val(
                             amount_col = name
                             break
 
-                int_value = int_df1[amount_col].sum()
+                int_value = int_df1[amount_col].abs().sum()
                 print(f"{file_output_name} INT VOLUME : {int_volume}")
                 print(f"{file_output_name} INT VALUE : {int_value}")
                 dup, dup_val = find_duplicates(int_df1)
@@ -319,7 +319,7 @@ def get_write_double_int_val(
                             amount_col = name
                             break
 
-                int_value = int_df1[amount_col].sum()
+                int_value = int_df1[amount_col].abs().sum()
                 print(f"{file_output_name} INT VOLUME : {int_volume}")
                 print(f"{file_output_name} INT VALUE : {int_value}")
                 dup, dup_val = find_duplicates(int_df1)
@@ -539,7 +539,7 @@ def run_recons(
     if ova_file_name is not None:
         # put the data into a dataframe
         ova_file_df = pd.read_excel(ova_file_name, skiprows=ova_header_lines)
-        ova_id_name = get_ova_id_col(df=ova_file_df)
+        ova_id_name = ova_id
         if ova_status_flag is not None:
             ova_file_df = ova_file_df.loc[
                 ova_file_df[ova_status_col] == ova_status_flag
@@ -550,7 +550,10 @@ def run_recons(
                 ova_file_df = ova_file_df[ova_file_df[name] == "C"]
                 break
         ova_volume = len(ova_file_df)
-        ova_volumes[list_index] = ova_volume
+        if ova_volumes[list_index] == 0:
+            ova_volumes[list_index] = ova_volume
+        else:
+            ova_volumes[list_index] += ova_volume
         print(
             f"{file_output_name}_OVA_Volume: {ova_volume}"
         )  # file_output_name is the name that shows for each channel as the script runs
@@ -561,9 +564,8 @@ def run_recons(
                     amount_col = name
                     break  # check which of the formats the amount column is written in
 
-        ova_value = ova_file_df[amount_col].sum()
+        ova_value = ova_file_df[amount_col].abs().sum()
         ova_values[list_index] = ova_value
-
         print(f"{file_output_name} OVA_VALUE : {ova_value}")
         with pd.ExcelWriter(
             recons_file, engine="openpyxl", mode="w"
@@ -575,7 +577,7 @@ def run_recons(
     # ----------------------- INTEGRATOR/ DUPLICATES --------------------
     if int_file_name is not None:
         int_file_df = pd.read_excel(int_file_name, skiprows=int_header_lines)
-        int_id_name = get_int_id_col(df=int_file_df)
+        int_id_name = int_id
         for name in service_name_headers:
             if name in int_file_df.columns:
                 if not int_file_df[name].isna().all():
@@ -621,8 +623,12 @@ def run_recons(
                 if not int_file_df[name].isna().all():
                     amount_col = name
                     break
-        int_value = int_file_df[amount_col].sum()
-        int_values[list_index] = int_value
+        int_value = int_file_df[amount_col].abs().sum()
+        if int_values[list_index] == 0:
+            int_values[list_index] = int_value
+        else:
+            int_values[list_index] += int_value
+        
         print(f"{file_output_name} INT_VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_file_df)
         print(f"Number of duplicates: {dup_val}")
@@ -632,11 +638,12 @@ def run_recons(
         write_duplicate_data(
             amount_col_name=amount_col, df=dup, value=dup_val, file_name=recons_file
         )
-
+    if ova_file_name == f"MPGS{yesterday}.xlsx":
+        return
     # ---------------------- MISSING TRANSACTIONS -------------------------
     if ova_file_df is not None and int_file_df is not None:
-        ova_id_name = get_ova_id_col(df=ova_file_df)
-        int_id_name = get_int_id_col(df=int_file_df)
+        ova_id_name = ova_id
+        int_id_name = int_id
         ova_file_df[ova_id_name] = ova_file_df[ova_id_name].astype(str).str.lower()
         int_file_df[int_id_name] = int_file_df[int_id_name].astype(str).str.lower()
 
@@ -676,14 +683,14 @@ def run_recons(
             int_file_df[int_id_name].astype("string").isin(missing_ova_tx)
             | int_file_df[alt_int_id].astype("string").isin(missing_ova_tx)
         ]
-        missing_ova_value = missing_ova_data[missing_int_amount_name].sum()
+        missing_ova_value = missing_ova_data[missing_int_amount_name].abs().sum()
 
         missing_int_data = ova_file_df[
             ova_file_df[ova_id_name].astype("string").isin(missing_int_tx)
             | ova_file_df[alt_ova_id].astype("string").isin(missing_int_tx)
         ]
 
-        missing_int_value = missing_int_data[missing_ova_amount_name].sum()
+        missing_int_value = missing_int_data[missing_ova_amount_name].abs().sum()
 
         write_missing_ova_data(
             amount_col_name=int_amount_col,
@@ -725,7 +732,7 @@ def gip_custom(
                 if not ova_df1[name].isna().all():
                     amount_col = name
                     break
-        ova_value = ova_df1[amount_col].sum() + ova_df2[amount_col].sum()
+        ova_value = ova_df1[amount_col].abs().sum() + ova_df2[amount_col].abs().sum()
         ova_values[10] = ova_value
         print(f"GIP OVA VOLUME : {ova_volume}")
         print(f"GIP OVA VALUE : {ova_value}")
@@ -748,7 +755,7 @@ def gip_custom(
                     amount_col = name
                     break
 
-        int_value = int_df[amount_col].sum()
+        int_value = int_df[amount_col].abs().sum()
         int_values[10] = int_value
         print(f"GIP INT VOLUME {int_volume}")
         print(f"GIP INT VALUE {int_value}")
@@ -788,7 +795,7 @@ def bb_mig_custom(
                 if not int_df[name].isna().all():
                     amount_col = name
                     break
-        int_value = int_df[amount_col].sum()
+        int_value = int_df[amount_col].abs().sum()
         int_values[21] = int_value
         print(f"BB MIG INT VOLUME {int_volume}")
         print(f"BB MIG INT VALUE {int_value}")
@@ -863,138 +870,138 @@ if __name__ == "__main__":
     dup_volumes = [0] * 29
     dup_values = [0.00] * 29
     list_index = 0
-    # run_recons(
-    #     (
-    #         check_for_file(f"MIGS 01{yesterday}.xlsx"),
-    #         check_for_file(f"MIGS 01 Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(3, 0),
-    #     alt_recons_name=f"MIGS 01{yesterday}",
-    #     file_output_name="MIGS_01",
-    #     list_index=0,
-    #     ova_id="Merchant Transaction Reference",
-    #     int_id="External Payment Request â†’ Institution Trans ID",
-    #     alt_int_id="Institution Trans ID",
-    #     alt_ova_id="Transaction ID",
-    # )
+    run_recons(
+        (
+            check_for_file(f"MIGS 01{yesterday}.xlsx"),
+            check_for_file(f"MIGS 01 Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(3, 0),
+        alt_recons_name=f"MIGS 01{yesterday}",
+        file_output_name="MIGS_01",
+        list_index=0,
+        ova_id="Merchant Transaction Reference",
+        int_id="External Payment Request â†’ Institution Trans ID",
+        alt_int_id="Institution Trans ID",
+        alt_ova_id="Transaction ID",
+    )
 
-    # run_recons(
-    #     (
-    #         check_for_file(f"MTN Prompt{yesterday}.xlsx"),
-    #         check_for_file(f"Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     mb_service_name="MTN Money MADAPI",
-    #     mb_creditDebit_flag="C",
-    #     alt_recons_name=f"MTN Prompt{yesterday}",
-    #     file_output_name="MTN Prompt",
-    #     list_index=1,
-    #     ova_id="External Transaction Id",
-    #     int_id="integratorTransId",
-    #     alt_int_id="BillerTransId",
-    #     alt_ova_id="Id",
-    # )
+    run_recons(
+        (
+            check_for_file(f"MTN Prompt{yesterday}.xlsx"),
+            check_for_file(f"Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        mb_service_name="MTN Money MADAPI",
+        mb_creditDebit_flag="C",
+        alt_recons_name=f"MTN Prompt{yesterday}",
+        file_output_name="MTN Prompt",
+        list_index=1,
+        ova_id="External Transaction Id",
+        int_id="IntegratorTransId",
+        alt_int_id="BillerTransId",
+        alt_ova_id="Id",
+    )
 
-    # run_recons(
-    #     (
-    #         check_for_file(f"MTN Cashout{yesterday}.xlsx"),
-    #         check_for_file(f"Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="MTN Cashout",
-    #     file_output_name="MTN_PORTAL",
-    #     mb_service_name="MTN Money MADAPI",
-    #     mb_creditDebit_flag="D",
-    #     list_index=3,
-    #     ova_id="External Transaction Id",
-    #     int_id="integratorTransId",
-    #     alt_int_id="BillerTransId",
-    #     alt_ova_id="Id",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"AirtelTigo Cashout{yesterday}.xlsx"),
-    #         check_for_file(f"Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(4, 0),
-    #     alt_recons_name="AirtelTigo Cashout",
-    #     file_output_name="AIRTEL_CASHOUT",
-    #     mb_service_name="AirtelMoney_Slydepay",
-    #     mb_creditDebit_flag="D",
-    #     list_index=5,
-    #     ova_id="Transaction Id",
-    #     int_id="integratorTransId",
-    #     alt_int_id="integratorTransId",
-    #     alt_ova_id="Transaction Id",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"Vodafone Cashin{yesterday}.xlsx"),
-    #         check_for_file(f"Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(5, 0),
-    #     alt_recons_name="Vodafone Cashin",
-    #     file_output_name="VODA CASHIN",
-    #     mb_service_name="Vodafone Cash",
-    #     mb_creditDebit_flag="C",
-    #     list_index=6,
-    #     ova_id="TransId",
-    #     int_id="integratorTransId",
-    #     alt_int_id="BillerTransId",
-    #     alt_ova_id="Receipt No.",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"Vodafone Cashout{yesterday}.xlsx"),
-    #         check_for_file(f"Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(5, 0),
-    #     alt_recons_name="Vodafone Cashout",
-    #     file_output_name="VODA CASHOUT",
-    #     mb_creditDebit_flag="D",
-    #     mb_service_name="Vodafone Cash",
-    #     list_index=7,
-    #     ova_id="TransId",
-    #     int_id="integratorTransId",
-    #     alt_int_id="BillerTransId",
-    #     alt_ova_id="Receipt No.",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"Stanbic FI Credit{yesterday}.xlsx"),
-    #         check_for_file(f"Stanbic FI Credit Metabase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="Stanbic FI Credit",
-    #     file_output_name="Stanbic FI CREDIT",
-    #     mb_status_flag="CONFIRMED",
-    #     list_index=8,
-    #     ova_id="REMARKS2",
-    #     int_id="External Payment Request → Institution Trans ID",
-    #     alt_int_id="External Payment Request → Institution Trans ID",
-    #     alt_ova_id="REMARKS2",
-    # )
-    # gip_custom(
-    #     ova_files=(
-    #         check_for_file(f"slydepay_sending_{GIPdate}'.xlsx"),
-    #         check_for_file(f"slydepay_sendingGhlink_{GIPdate}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="slydepay_sending_",
-    #     file_output_name="GIP",
-    #     int_file=check_for_file(f"GIP Metabase{yesterday}.xlsx"),
-    # )
+    run_recons(
+        (
+            check_for_file(f"MTN Cashout{yesterday}.xlsx"),
+            check_for_file(f"Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="MTN Cashout",
+        file_output_name="MTN_PORTAL",
+        mb_service_name="MTN Money MADAPI",
+        mb_creditDebit_flag="D",
+        list_index=3,
+        ova_id="External Transaction Id",
+        int_id="IntegratorTransId",
+        alt_int_id="BillerTransId",
+        alt_ova_id="Id",
+    )
+    run_recons(
+        (
+            check_for_file(f"AirtelTigo Cashout{yesterday}.xlsx"),
+            check_for_file(f"Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(4, 0),
+        alt_recons_name="AirtelTigo Cashout",
+        file_output_name="AIRTEL_CASHOUT",
+        mb_service_name="AirtelMoney_Slydepay",
+        mb_creditDebit_flag="D",
+        list_index=5,
+        ova_id="Transaction Id",
+        int_id="IntegratorTransId",
+        alt_int_id="integratorTransId",
+        alt_ova_id="Transaction Id",
+    )
+    run_recons(
+        (
+            check_for_file(f"Vodafone Cashin{yesterday}.xlsx"),
+            check_for_file(f"Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(5, 0),
+        alt_recons_name="Vodafone Cashin",
+        file_output_name="VODA CASHIN",
+        mb_service_name="Vodafone Cash",
+        mb_creditDebit_flag="C",
+        list_index=6,
+        ova_id="TransId",
+        int_id="IntegratorTransId",
+        alt_int_id="BillerTransId",
+        alt_ova_id="Receipt No.",
+    )
+    run_recons(
+        (
+            check_for_file(f"Vodafone Cashout{yesterday}.xlsx"),
+            check_for_file(f"Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(5, 0),
+        alt_recons_name="Vodafone Cashout",
+        file_output_name="VODA CASHOUT",
+        mb_creditDebit_flag="D",
+        mb_service_name="Vodafone Cash",
+        list_index=7,
+        ova_id="TransId",
+        int_id="IntegratorTransId",
+        alt_int_id="BillerTransId",
+        alt_ova_id="Receipt No.",
+    )
+    run_recons(
+        (
+            check_for_file(f"Stanbic FI Credit{yesterday}.xlsx"),
+            check_for_file(f"Stanbic FI Credit Metabase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="Stanbic FI Credit",
+        file_output_name="Stanbic FI CREDIT",
+        mb_status_flag="CONFIRMED",
+        list_index=8,
+        ova_id="REMARKS2",
+        int_id="External Payment Request → Institution Trans ID",
+        alt_int_id="External Payment Request → Institution Trans ID",
+        alt_ova_id="REMARKS2",
+    )
+    gip_custom(
+        ova_files=(
+            check_for_file(f"slydepay_sending_{GIPdate}'.xlsx"),
+            check_for_file(f"slydepay_sendingGhlink_{GIPdate}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="slydepay_sending_",
+        file_output_name="GIP",
+        int_file=check_for_file(f"GIP Metabase{yesterday}.xlsx"),
+    )
 
-    # bb_mig_custom(
-    #     ova_files=(
-    #         check_for_file(f"MIGS 08{yesterday}.xlsx"),
-    #         check_for_file(f"MIGS 09{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(3, 3),
-    #     alt_recons_name=f"MIGS 08{yesterday}.xlsx",
-    #     file_output_name="BB MIG",
-    #     int_file=check_for_file(f"MiGS_trn{yesterday}.xlsx"),
-    # )
+    bb_mig_custom(
+        ova_files=(
+            check_for_file(f"MIGS 08{yesterday}.xlsx"),
+            check_for_file(f"MIGS 09{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(3, 3),
+        alt_recons_name=f"MIGS 08{yesterday}.xlsx",
+        file_output_name="BB MIG",
+        int_file=check_for_file(f"MiGS_trn{yesterday}.xlsx"),
+    )
     run_recons(
         (
             check_for_file(f"MPGS{yesterday}.xlsx"),
@@ -1004,8 +1011,8 @@ if __name__ == "__main__":
         alt_recons_name="MPGS",
         file_output_name="MPGS",
         mb_status_flag="CONFIRMED",
-        alt_int_id="",
-        alt_ova_id="",
+        alt_int_id="Transaction Id",
+        alt_ova_id="Order ID",
         list_index=22,
         ova_id="Order ID",
         int_id="Transaction Id",
@@ -1023,101 +1030,101 @@ if __name__ == "__main__":
         list_index=22,
         ova_id="Order Code",
         int_id="Universal Transaction Reference",
-        alt_int_id="Universal Transaction Reference",
+        alt_int_id="Receipt No",
         alt_ova_id="Order Code",
     )
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR MTN Credit{yesterday}.xlsx"),
-    #         check_for_file(f"KR MTN Disb_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="KR MTN Credit",
-    #     file_output_name="MTN_KR_Credit",
-    #     list_index=23,
-    #     ova_id="External Transaction Id",
-    #     int_id="IntegratorTransId",
-    #     alt_int_id="BillerTransId",
-    #     alt_ova_id="Id",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR MTN Debit{yesterday}.xlsx"),
-    #         check_for_file(f"KR MTN Coll_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="KR MTN Debit",
-    #     file_output_name="MTN_KR_Debit",
-    #     list_index=24,
-    #     ova_id="External Transaction Id",
-    #     int_id="IntegratorTransId",
-    #     alt_ova_id="Id",
-    #     alt_int_id="BillerTransId",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
-    #         check_for_file(f"KR AirtelTigo Coll_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="AirtelTigo Cashin",
-    #     file_output_name="AIRTEL_KR_Cashin",
-    #     ova_status_flag="Merchant Payment",
-    #     ova_status_col="Service Type",
-    #     mb_status_flag="CONFIRMED",
-    #     list_index=25,
-    #     ova_id="External Transaction Id",
-    #     int_id="Transaction Id",
-    #     alt_int_id="",
-    #     alt_ova_id="",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
-    #         check_for_file(f"KR AirtelTigo Disb_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(0, 0),
-    #     alt_recons_name="AirtelTigo Cashout",
-    #     file_output_name="AIRTEL_KR_Cashout",
-    #     ova_status_flag="Cash in",
-    #     ova_status_col="Service Type",
-    #     mb_status_flag="CONFIRMED",
-    #     list_index=26,
-    #     ova_id="External Transaction Id",
-    #     int_id="Transaction Id",
-    #     alt_int_id="Transaction Id",
-    #     alt_ova_id="External Transaction Id",
-    # )
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR Vodafone Cashin{yesterday}.xlsx"),
-    #         check_for_file(f"KR Vodafone Coll_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(5, 0),
-    #     alt_recons_name="KR VODA Cashin",
-    #     file_output_name="Voda KR Cashin",
-    #     mb_status_flag="CONFIRMED",
-    #     list_index=27,
-    #     ova_id="TransId",
-    #     int_id="Transaction Id",
-    #     alt_int_id="Receipt No.",
-    #     alt_ova_id="Receipt No.",
-    # )
+    run_recons(
+        (
+            check_for_file(f"KR MTN Credit{yesterday}.xlsx"),
+            check_for_file(f"KR MTN Disb_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="KR MTN Credit",
+        file_output_name="MTN_KR_Credit",
+        list_index=23,
+        ova_id="External Transaction Id",
+        int_id="IntegratorTransId",
+        alt_int_id="BillerTransId",
+        alt_ova_id="Id",
+    )
+    run_recons(
+        (
+            check_for_file(f"KR MTN Debit{yesterday}.xlsx"),
+            check_for_file(f"KR MTN Coll_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="KR MTN Debit",
+        file_output_name="MTN_KR_Debit",
+        list_index=24,
+        ova_id="External Transaction Id",
+        int_id="IntegratorTransId",
+        alt_ova_id="Id",
+        alt_int_id="BillerTransId",
+    )
+    run_recons(
+        (
+            check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
+            check_for_file(f"KR AirtelTigo Coll_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="AirtelTigo Cashin",
+        file_output_name="AIRTEL_KR_Cashin",
+        ova_status_flag="Merchant Payment",
+        ova_status_col="Service Type",
+        mb_status_flag="CONFIRMED",
+        list_index=25,
+        ova_id="External Transaction Id",
+        int_id="Transaction Id",
+        alt_int_id="",
+        alt_ova_id="",
+    )
+    run_recons(
+        (
+            check_for_file(f"KR AirtelTigo{yesterday}.xlsx"),
+            check_for_file(f"KR AirtelTigo Disb_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name="AirtelTigo Cashout",
+        file_output_name="AIRTEL_KR_Cashout",
+        ova_status_flag="Cash in",
+        ova_status_col="Service Type",
+        mb_status_flag="CONFIRMED",
+        list_index=26,
+        ova_id="External Transaction Id",
+        int_id="Transaction Id",
+        alt_int_id="Transaction Id",
+        alt_ova_id="External Transaction Id",
+    )
+    run_recons(
+        (
+            check_for_file(f"KR Vodafone Cashin{yesterday}.xlsx"),
+            check_for_file(f"KR Vodafone Coll_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(5, 0),
+        alt_recons_name="KR VODA Cashin",
+        file_output_name="Voda KR Cashin",
+        mb_status_flag="CONFIRMED",
+        list_index=27,
+        ova_id="TransId",
+        int_id="Transaction Id",
+        alt_int_id="Receipt No.",
+        alt_ova_id="Receipt No.",
+    )
 
-    # run_recons(
-    #     (
-    #         check_for_file(f"KR Vodafone Cashout{yesterday}.xlsx"),
-    #         check_for_file(f"KR Vodafone Disb_mBase{yesterday}.xlsx"),
-    #     ),
-    #     num_lines_of_header=(5, 0),
-    #     alt_recons_name="KR Voda Cashout",
-    #     file_output_name="Voda KR Cashout",
-    #     mb_status_flag="CONFIRMED",
-    #     list_index=28,
-    #     ova_id="TransId",
-    #     int_id="Transaction Id",
-    #     alt_int_id="Receipt No.",
-    #     alt_ova_id="Receipt No.",
-    # )
-    # #---------------------------
+    run_recons(
+        (
+            check_for_file(f"KR Vodafone Cashout{yesterday}.xlsx"),
+            check_for_file(f"KR Vodafone Disb_mBase{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(5, 0),
+        alt_recons_name="KR Voda Cashout",
+        file_output_name="Voda KR Cashout",
+        mb_status_flag="CONFIRMED",
+        list_index=28,
+        ova_id="TransId",
+        int_id="Transaction Id",
+        alt_int_id="Receipt No.",
+        alt_ova_id="Receipt No.",
+    )
+    #---------------------------
 update_recons_sheet()
