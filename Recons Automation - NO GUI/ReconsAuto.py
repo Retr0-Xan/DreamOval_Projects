@@ -50,50 +50,6 @@ def check_for_file(file_name):
         return None
 
 
-def get_ova_id_col(df: pd.DataFrame):
-    # This function looks through a given dataframe(specifically the ova df) and returns the transaction id name for that particular channel
-    id_names = [
-        "integratorTransId",
-        "IntegratorTransId",
-        "Transaction Id",
-        "TransId",
-        "External Transaction Id",
-        "BillerTransId",
-        "Id",
-        "External Payment Request â†’ Institution Trans ID",
-        "Merchant Transaction Reference",
-        "REMARKS2",
-        "External Payment Request → Institution Trans ID",
-        "Order Code",
-        "Order ID",
-    ]
-    for id in id_names:
-        if id in df:
-            return id
-
-
-def get_int_id_col(df: pd.DataFrame):
-    # See get_ova_id_col function
-    id_names = [
-        "integratorTransId",
-        "IntegratorTransId",
-        "Transaction Id",
-        "TransId",
-        "External Transaction Id",
-        "BillerTransId",
-        "Id",
-        "External Payment Request â†’ Institution Trans ID",
-        "Merchant Transaction Reference",
-        "REMARKS2",
-        "External Payment Request → Institution Trans ID",
-        "Order Code",
-        "Order ID",
-    ]
-    for id in id_names:
-        if id in df:
-            return id
-
-
 def get_date(
     date: date, format: Literal["gip"] | Literal["normal"] | Literal["recons"]
 ):
@@ -192,7 +148,9 @@ def get_write_double_ova_val(
                 if not ova_df2[name].isna().all():
                     df2_amount_col = name
                     break
-        ova_value = ova_df1[df1_amount_col].abs().sum() + ova_df2[df2_amount_col].abs().sum()
+        ova_value = (
+            ova_df1[df1_amount_col].abs().sum() + ova_df2[df2_amount_col].abs().sum()
+        )
         ova_values[21] = ova_value
         print(f"{file_output_name} OVA VOLUME : {ova_volume}")
         print(f"{file_output_name} OVA VALUE : {ova_value}")
@@ -266,7 +224,9 @@ def get_write_double_int_val(
                     df2_amount_col = name
                     break
 
-        int_value = int_df1[df1_amount_col].abs().sum() + int_df2[df2_amount_col].abs().sum()
+        int_value = (
+            int_df1[df1_amount_col].abs().sum() + int_df2[df2_amount_col].abs().sum()
+        )
         print(f"{file_output_name} INT VOLUME : {int_volume}")
         print(f"{file_output_name} INT VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_df1)
@@ -351,8 +311,6 @@ def update_recons_sheet():
         fsheet = fwb[current_month]
         fwb.active = fwb[current_month]
 
-    first_col = fwb.active.min_column  # type: ignore
-    last_col = fwb.active.max_column  # type: ignore
     first_row = fwb.active.min_row  # type: ignore
     last_row = fwb.active.max_row  # type: ignore
 
@@ -373,7 +331,7 @@ def update_recons_sheet():
         start_row += 1
     start_row += 10
 
-    for row in range(21, 29):
+    for row in range(21, 30):
         fsheet["E" + str(start_row)].value = ova_volumes[row]
         fsheet["F" + str(start_row)].value = abs(ova_values[row])
         fsheet["G" + str(start_row)].value = int_volumes[row]
@@ -550,10 +508,7 @@ def run_recons(
                 ova_file_df = ova_file_df[ova_file_df[name] == "C"]
                 break
         ova_volume = len(ova_file_df)
-        if ova_volumes[list_index] == 0:
-            ova_volumes[list_index] = ova_volume
-        else:
-            ova_volumes[list_index] += ova_volume
+        ova_volumes[list_index] = ova_volume
         print(
             f"{file_output_name}_OVA_Volume: {ova_volume}"
         )  # file_output_name is the name that shows for each channel as the script runs
@@ -628,10 +583,11 @@ def run_recons(
             int_values[list_index] = int_value
         else:
             int_values[list_index] += int_value
-        
+
         print(f"{file_output_name} INT_VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_file_df)
-        print(f"Number of duplicates: {dup_val}")
+        print(f"Number of duplicates: {len(dup)}")
+        print(f"Duplicates value: {dup_val}")
         dup_volumes[list_index] = len(dup)
         dup_values[list_index] = dup_val
 
@@ -863,13 +819,15 @@ if __name__ == "__main__":
 
     GIPdate = get_date(date=date_ + timedelta(1), format="gip")
     print(GIPdate)
-    ova_volumes = [0] * 29
-    ova_values = [0] * 29
-    int_volumes = [0] * 29
-    int_values = [0] * 29
-    dup_volumes = [0] * 29
-    dup_values = [0.00] * 29
+
+    ova_volumes = [0] * 30
+    ova_values = [0] * 30
+    int_volumes = [0] * 30
+    int_values = [0] * 30
+    dup_volumes = [0] * 30
+    dup_values = [0.00] * 30
     list_index = 0
+    
     run_recons(
         (
             check_for_file(f"MIGS 01{yesterday}.xlsx"),
@@ -884,7 +842,6 @@ if __name__ == "__main__":
         alt_int_id="Institution Trans ID",
         alt_ova_id="Transaction ID",
     )
-
     run_recons(
         (
             check_for_file(f"MTN Prompt{yesterday}.xlsx"),
@@ -901,7 +858,6 @@ if __name__ == "__main__":
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
     )
-
     run_recons(
         (
             check_for_file(f"MTN Cashout{yesterday}.xlsx"),
@@ -1027,7 +983,7 @@ if __name__ == "__main__":
         file_output_name="QUIPU",
         ova_status_flag="SUCCESS",
         ova_status_col="Status",
-        list_index=22,
+        list_index=23,
         ova_id="Order Code",
         int_id="Universal Transaction Reference",
         alt_int_id="Receipt No",
@@ -1041,7 +997,7 @@ if __name__ == "__main__":
         num_lines_of_header=(0, 0),
         alt_recons_name="KR MTN Credit",
         file_output_name="MTN_KR_Credit",
-        list_index=23,
+        list_index=24,
         ova_id="External Transaction Id",
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
@@ -1055,7 +1011,7 @@ if __name__ == "__main__":
         num_lines_of_header=(0, 0),
         alt_recons_name="KR MTN Debit",
         file_output_name="MTN_KR_Debit",
-        list_index=24,
+        list_index=25,
         ova_id="External Transaction Id",
         int_id="IntegratorTransId",
         alt_ova_id="Id",
@@ -1072,7 +1028,7 @@ if __name__ == "__main__":
         ova_status_flag="Merchant Payment",
         ova_status_col="Service Type",
         mb_status_flag="CONFIRMED",
-        list_index=25,
+        list_index=26,
         ova_id="External Transaction Id",
         int_id="Transaction Id",
         alt_int_id="",
@@ -1089,7 +1045,7 @@ if __name__ == "__main__":
         ova_status_flag="Cash in",
         ova_status_col="Service Type",
         mb_status_flag="CONFIRMED",
-        list_index=26,
+        list_index=27,
         ova_id="External Transaction Id",
         int_id="Transaction Id",
         alt_int_id="Transaction Id",
@@ -1104,7 +1060,7 @@ if __name__ == "__main__":
         alt_recons_name="KR VODA Cashin",
         file_output_name="Voda KR Cashin",
         mb_status_flag="CONFIRMED",
-        list_index=27,
+        list_index=28,
         ova_id="TransId",
         int_id="Transaction Id",
         alt_int_id="Receipt No.",
@@ -1120,11 +1076,11 @@ if __name__ == "__main__":
         alt_recons_name="KR Voda Cashout",
         file_output_name="Voda KR Cashout",
         mb_status_flag="CONFIRMED",
-        list_index=28,
+        list_index=29,
         ova_id="TransId",
         int_id="Transaction Id",
         alt_int_id="Receipt No.",
         alt_ova_id="Receipt No.",
     )
-    #---------------------------
+    # ---------------------------
 update_recons_sheet()
