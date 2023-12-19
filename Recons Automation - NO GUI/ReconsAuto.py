@@ -50,7 +50,6 @@ def check_for_file(file_name):
     else:
         return None
 
-
 def get_date(
     date: date, format: Literal["gip"] or Literal["normal"] or Literal["recons"]
 ):
