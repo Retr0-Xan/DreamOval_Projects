@@ -2,19 +2,23 @@ import pandas as pd
 from pandas import *
 from openpyxl import load_workbook
 from datetime import date
+import os
 
 bulk_gen_df = pd.read_excel(
     "settlementAuto/kowri_payment_file_generator.xlsm", skiprows=6
 )
 
-settlement_advice_file = "settlement_advice.csv"
+settlement_advice_file = "./settlementAuto/Data/settlement_advice.csv"
 settle_adv_df = pd.read_csv(settlement_advice_file)
 
 
 def clear_rows_with_value(sheet, column):
     for row in range(sheet.max_row, 1, -1):
         cell_value = sheet.cell(row=row, column=column).value
-        if (cell_value== f"=_xlfn.VALUETOTEXT(IF(ISNA(VLOOKUP(A{row},'Institutional Codes'!$A$1:$B$24,2,FALSE)),\"\",VLOOKUP(A{row},'Institutional Codes'!$A$1:$B$24,2,FALSE)))"):
+        if (
+            cell_value
+            == f"=_xlfn.VALUETOTEXT(IF(ISNA(VLOOKUP(A{row},'Institutional Codes'!$A$1:$B$24,2,FALSE)),\"\",VLOOKUP(A{row},'Institutional Codes'!$A$1:$B$24,2,FALSE)))"
+        ):
             sheet.delete_rows(row)
 
 
@@ -128,8 +132,18 @@ for count, (i, acc) in enumerate(enumerate(sett_accNum)):
         continue
 column_to_check = 7
 
-pd.DataFrame([unfinished_settlements]).to_excel("Manual_settlements_pending.xlsx",index=False)
+pd.DataFrame([unfinished_settlements]).to_csv(
+    "./settlementAuto/Data/Manual_settlements_pending.csv", index=False
+)
 clear_rows_with_value(sheet, column_to_check)
 wb.close()
-wb.save(f"bulk_settlement_{date.today()}.xlsm")
+wb.save(f"./settlementAuto/Data/temp.xlsm")
+
+output_df = pd.read_excel(f"./settlementAuto/Data/temp.xlsm", skiprows=6)
+output_df.to_csv(
+    f"./settlementAuto/Data/bulk_settlement_{date.today()}.csv", index=False
+)
+os.remove("./settlementAuto/Data/temp.xlsm")
+
+
 print(unfinished_settlements)
