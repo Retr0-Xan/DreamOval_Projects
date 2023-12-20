@@ -1,0 +1,34 @@
+Service Code,Service Name,Account Name,Account Number,Branch Name,Branch Code,Transaction Count,Currency,Settlement Amount,Narrative
+225,Wedding In A Box,Tawfik Mohammed Yakubu,233541897827.00 ,N/A,N/A,1,GHS,140,$detail.narrative
+974,Ghana Chamber of Young Entrepreneurs ,Ghana Chamber of Young Entrepreneurs,300309/0291335979014,Nungua Junction Mall branch,N/A,1,GHS,192,$detail.narrative
+23324,MTN Money MADAPI,Dreamoval Limited (fidelity Bank),300323/1056007788230,Ridge Towers,N/A,178,GHS,56026.5,$detail.narrative
+527,Digital Interactive,John Tetteh Nartey,300307/1132000002716701,Madina branch,N/A,3,GHS,27,$detail.narrative
+23320,Vodafone Cash,Dreamoval Limited (fidelity Bank),300323/1050007788220,Ridge Towers,N/A,42,GHS,5520,$detail.narrative
+23320,Vodafone Cash,Dreamoval Limited (fidelity Bank),300323/1050007788220,Ridge Towers,N/A,72,GHS,-57128.3,$detail.narrative
+23326,AirtelTigo Money AM,Dreamoval Limited (fidelity Bank),1050007788220.00 ,Ridge Towers,N/A,7,GHS,680.5,$detail.narrative
+23326,AirtelTigo Money AM,Dreamoval Limited (fidelity Bank),1050007788220.00 ,Ridge Towers,N/A,4,GHS,-110.94,$detail.narrative
+505,MTN Airtime,MTN Airtime Kowri,300303/0361027523,N/A,N/A,36,GHS,421.44,$detail.narrative
+24,AirtelTigo Airtime,AirtelTigo Airtime Kowri,300303/0361027523,N/A,N/A,5,GHS,71,$detail.narrative
+44,Vodafone Airtime,Vodafone Airtime Kowri,300303/0361027523,N/A,N/A,18,GHS,173,$detail.narrative
+5,Donewell Insurance Company Limited,Donewell Insurance,300331/1707943100003,N/A,N/A,1,GHS,1165.45,$detail.narrative
+482,Jumia Offline Payments,Jade E Services - Kowri,300322/201109966111,Head Office Branch,N/A,55,GHS,30456.83,$detail.narrative
+606,PassionAir,PassionAir Kowri,300307/0101000133569101,N/A,N/A,360,GHS,542100.43,$detail.narrative
+2314,Sega Pharma,LESLIE GEORGE LAMPTEY,300322/206106021140,N/A,N/A,1,GHS,4312,$detail.narrative
+540,Decathlon Ghana,Decathlon Ghana - Kowri,9040006352582.00 ,N/A,N/A,1,GHS,235.2,$detail.narrative
+5389,Electronic Transfer Levy,Dreamoval Ltd,300323/1056007788219,Ridge Towers,N/A,40,GHS,86.6,$detail.narrative
+2042,Green Butterfly,Green Butterfly,233557952275.00 ,N/A,N/A,5,GHS,792.99,$detail.narrative
+5022,MTN Flexi Data Bundle,MTN Flexi Data Bundles,300303/0361027523,N/A,N/A,10,GHS,73,$detail.narrative
+2067,Ghana National Association of Certificated Counsellors,Ghana National Association of Certificated Counsellors,300304/1471010019102,Adenta Branch,N/A,6,GHS,1050,$detail.narrative
+6,Star Assurance Company Ltd,STAR ASSURANCE COMPANY LIMITED,9040002375693.00 ,Accra Main branch,N/A,3,GHS,793.36,$detail.narrative
+2234,NAGRAT-MTN Data,SE Auto Ltd,300312/1441002387309,Kwame Nkrumah Avenue Branch,N/A,9002,GHS,321540.52,$detail.narrative
+229,NAGRAT MTN DATA Bundle Refund,SE Auto Ltd,300312/1441002387309,Kwame Nkrumah Avenue Branch,N/A,1,GHS,53.08,$detail.narrative
+400,Donewell Insurance Agents Collections,Donewell Insurance,300331/1707943100003,N/A,N/A,34,GHS,45926.91,$detail.narrative
+2223,Borteyman Flatowners Association,N/A,N/A,N/A,N/A,1,GHS,1,$detail.narrative
+2244,TheresaNaomi Foundation,N/A,N/A,N/A,N/A,1,GHS,1,$detail.narrative
+2281,Auto Hive,Auto Hive,233559059202.00 ,N/A,N/A,10,GHS,65.66,$detail.narrative
+7,Kowri Consumer Cash In,N/A,N/A,N/A,N/A,162,GHS,148.46,$detail.narrative
+23324,MTN Money MADAPI,SEVN Ghana Ltd,Care International Prepaid Balance Expenditure,N/A,N/A,1,GHS,6000,$detail.narrative
+1765,KASA HOSPITAL,KASA HOAPITAL,10231062011.00 ,Omnibank,N/A,2,GHS,1603.88,$detail.narrative
+1,ECG,N/A,N/A,N/A,N/A,9,GHS,9,$detail.narrative
+0,Dreamoval Acquiring Commission,Dreamoval Merchants Commissions Suspense Account,300323/1056007788228,,,1,GHS,13007.25,Dreamoval Acquiring commissions for transactions settled on 2023-12-14
+0,Billbox Commission,Dreamoval Merchant Commissions Receiving account,300323/1056007788228,,,1,GHS,10,Billbox commissions for transactions settled on 2023-12-14
