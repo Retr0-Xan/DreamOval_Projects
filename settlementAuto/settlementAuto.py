@@ -99,11 +99,13 @@ for count, (i, acc) in enumerate(enumerate(sett_accNum)):
 
     if acc.startswith("233"):
         useAcc = acc[0:5]
+        finAcc = acc
         skiprowBool = False
         useRow += 1
 
     elif acc.startswith("300"):
         useAcc = acc[0:6]
+        finAcc = acc[7:]
         skiprowBool = False
         useRow += 1
     else:
@@ -118,7 +120,7 @@ for count, (i, acc) in enumerate(enumerate(sett_accNum)):
         continue
     if useAcc in codes:
         print(f"the account {acc} is {codes[useAcc]}")
-        sheet[f"B{useRow}"].value = acc
+        sheet[f"B{useRow}"].value = finAcc
         sheet[f"A{useRow}"].value = codes[useAcc]
         sheet[f"C{useRow}"].value = settle_adv_df["Account Name"].iloc[i]
         sheet[f"D{useRow}"].value = settle_adv_df["Settlement Amount"].iloc[i]
