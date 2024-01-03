@@ -1107,7 +1107,7 @@ def main():
 
         logo_img = ctk.CTkImage(
             Image.open(
-                "/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png"
+                resource_path("/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png")
             ),
             size=(200, 70),
         )
@@ -1353,7 +1353,7 @@ def main():
 
     style = ttk.Style(root)
     # Import the tcl file
-    root.tk.call("source", "assets/Forest-ttk-theme-master/forest-light.tcl")
+    root.tk.call("source", resource_path("assets/Forest-ttk-theme-master/forest-light.tcl"))
 
     # Set the theme with the theme_use method
     style.theme_use("forest-light")
