@@ -15,30 +15,101 @@ import warnings, time, threading, subprocess
 warnings.filterwarnings("ignore")
 
 
-# class Console(tk.Frame):
-#     def __init__(self, master):
-#         super().__init__(master)
-#         self.text_widget = tk.Text(self, wrap=tk.WORD)
-#         self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+#################################### ATTEMPTS FOR DYNAMIC DIRECTORY (INVESTIGATE LATER)#####################################
+# if getattr(sys, 'frozen', False):
+#     EXE_LOCATION = os.path.dirname( sys.executable ) # cx_Freeze frozen
+# else:
+#     EXE_LOCATION = os.path.dirname( os.path.realpath( __file__ ) ) # Other packers
 
-#         self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
-#         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+# my_logo = os.path.join( EXE_LOCATION, "assets", "KowriLogo.png" )
+# my_theme = os.path.join( EXE_LOCATION, "Forest-ttk-theme-master", "forest-light.tcl" )
 
-#         self.text_widget.config(yscrollcommand=self.scrollbar.set)
+# curpath = os.getcwd()
+# logoPath = os.path.abspath("assets/KowriLogo.png")
+############################################################################################################################
 
-#         sys.stdout = self
 
-#     def write(self, text):
-#         self.text_widget.insert(tk.END, text)
-#         self.text_widget.see(tk.END)  # Automatically scroll to the end
+class Console(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.text_widget = tk.Text(self, wrap=tk.WORD)
+        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-#     def flush(self):
-#         pass
+        self.scrollbar = tk.Scrollbar(self, command=self.text_widget.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-# def restart_program():
-#     python = sys.executable  # Get the s to the Python interpreter
-#     subprocess.Popen([python] + sys.argv)  # Restart the program with the same command line arguments
-#     os._exit(0)  # Forcefully exit the current instance
+        self.text_widget.config(yscrollcommand=self.scrollbar.set)
+
+        sys.stdout = self
+        sys.stderr = self
+
+    def write(self, text):
+        self.text_widget.insert(tk.END, text)
+        self.text_widget.see(tk.END)  # Automatically scroll to the end
+
+    def flush(self):
+        pass
+
+
+def restart_program():
+    python = sys.executable  # Get the s to the Python interpreter
+    subprocess.Popen(
+        [python] + sys.argv
+    )  # Restart the program with the same command line arguments
+    os._exit(0)  # Forcefully exit the current instance
+
+
+home_directory = os.path.expanduser("~")
+user = os.path.basename(home_directory)
+
+
+warnings.filterwarnings("ignore")
+#################################### DYNAMIC DIRECTORY FIX (WORKING)#############################################
+
+# def get_script_directory():
+#     # Determine the directory where the script is located
+#     if getattr(sys, 'frozen', False):
+#         # We are running from a bundled executable
+#         return os.path.dirname(sys.executable)
+#     else:
+#         # We are running the script directly
+#         return os.path.dirname(os.path.abspath(__file__))
+
+# # Get the script directory
+# script_dir = get_script_directory()
+# os.chdir(script_dir)
+# print(script_dir)
+
+# # Use script_dir as the reference point for accessing assets and files
+# asset_path = os.path.join(script_dir, 'assets', 'example.txt')
+###################################################################################################################
+
+
+def set_working_directory_to_script_location():
+    if getattr(sys, "frozen", False):
+        # We are running from a bundled executable
+        script_dir = os.path.dirname(sys.executable)
+    else:
+        # We are running the script directly
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    os.chdir(script_dir)
+    return script_dir
+
+
+# Call the function to set the working directory
+script_dir = set_working_directory_to_script_location()
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 tx_id_col_names = [
@@ -403,7 +474,6 @@ def recons_ops(
     ova_status_col: str or None = None,
     list_index: int,
 ):
-    list_index
     if file_names[0] is None and file_names[1] is None:
         return
     service_name_header = ""
@@ -1022,11 +1092,12 @@ def reconsLoop():
             alt_int_id="Receipt No.",
             alt_ova_id="Receipt No.",
         )
+    print("Completed")
 
 
 def main():
     root = ctk.CTk()
-    root.title("KowRecons")
+    root.title("Kowri Recons")
     root.option_add("*tearOff", False)
     root._set_appearance_mode("light")
     root.geometry("500x550")
@@ -1034,7 +1105,6 @@ def main():
     def render_recons_frame(tab):
         recons_frame = ctk.CTkFrame(tab, fg_color="white")
 
-        # windows path = "C:\\Users\\Mark\\repos\DreamOval_Projects\Recons Automation - GUI\\assets\\KowriLogo.png"
         logo_img = ctk.CTkImage(
             Image.open(
                 "/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png"
@@ -1085,11 +1155,59 @@ def main():
             yearCombo.configure(state="enabled")
             yearLabel.configure(text_color="green")
 
+        def topLevelConsole():
+            consoleWindow = ctk.CTkToplevel()
+            consoleWindow.title("Results")
+            consoleWindow.geometry("500x650")
+            consoleWindow.attributes("-topmost", True)
+
+            consoleWindow.columnconfigure(index=0, weight=1)
+            consoleWindow.columnconfigure(index=1, weight=1)
+            consoleWindow.columnconfigure(index=2, weight=1)
+            consoleWindow.rowconfigure(index=0, weight=1)
+            consoleWindow.rowconfigure(index=1, weight=1)
+            consoleWindow.rowconfigure(index=2, weight=1)
+
+            console_frame = ttk.Frame(consoleWindow)
+            console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            console = Console(console_frame)
+            console.pack(fill=tk.BOTH, expand=True)
+
+            try:
+                run_recons()
+                reconsLoop()
+            finally:
+                progress_bar.stop()
+                progress_bar.pack_forget()
+            # consoleWindow.mainloop()
+
+        def loadingProgress():
+            root.update()
+            progress_bar.pack()
+            progress_bar.start()
+
+        def startProgress():
+            threading.Thread(target=loadingProgress).start()
+            # progressThread.start()
+
+        def startWindow():
+            threading.Thread(target=topLevelConsole).start()
+            # consoleThread.start()
+
         def run_recons():
             global yesterday
             global recons_yesterday
             global GIPdate
             global current_month
+            global ova_values
+            global ova_volumes
+            global int_volumes
+            global int_values
+            global dup_volumes
+            global dup_values
+            global list_index
+
             if recons_var.get() == "no":
                 customDay = dayCombo.get()
                 customMonth = monthCombo.get()
@@ -1105,7 +1223,6 @@ def main():
 
                 GIPmonth = 0
                 GIPday = 0
-
 
                 recons_yesterday = (
                     "20"
@@ -1152,61 +1269,14 @@ def main():
                 GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
                 print(GIPdate)
 
-                global ova_values 
-                global ova_volumes
-                global int_volumes
-                global int_values 
-                global dup_volumes
-                global dup_values 
-                global list_index 
 
-                ova_volumes = [0] * 30
-                ova_values = [0] * 30
-                int_volumes = [0] * 30
-                int_values = [0] * 30
-                dup_volumes = [0] * 30
-                dup_values = [0.00] * 30
-                list_index = 0
-
-                reconsLoop()
-
-        # def topLevelConsole():
-        #     consoleWindow = tk.Tk()
-        #     consoleWindow.title("Results")
-        #     consoleWindow.geometry("500x650")
-        #     consoleWindow.attributes('-topmost', True)
-
-        #     consoleWindow.columnconfigure(index=0, weight=1)
-        #     consoleWindow.columnconfigure(index=1, weight=1)
-        #     consoleWindow.columnconfigure(index=2, weight=1)
-        #     consoleWindow.rowconfigure(index=0, weight=1)
-        #     consoleWindow.rowconfigure(index=1, weight=1)
-        #     consoleWindow.rowconfigure(index=2, weight=1)
-
-        #     console_frame = ttk.Frame(consoleWindow)
-        #     console_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        #     console = Console(console_frame)
-        #     console.pack(fill=tk.BOTH, expand=True)
-
-        #     runRecons()
-        #     progress_bar.stop()
-        #     progress_bar.pack_forget()
-
-        #     consoleWindow.protocol("WM_DELETE_WINDOW", restart_program)
-
-        #     consoleWindow.mainloop()
-
-        # def loadingProgress():
-        #     root.update()
-        #     progress_bar.pack()
-        #     progress_bar.start()
-
-        # def startProgress():
-        #     progressThread.start()
-
-        # def startWindow():
-        #     consoleThread.start()
+            ova_volumes = [0] * 30
+            ova_values = [0] * 30
+            int_volumes = [0] * 30
+            int_values = [0] * 30
+            dup_volumes = [0] * 30
+            dup_values = [0.00] * 30
+            list_index = 0
 
         day_value_list = []
         for i in range(1, 32):
@@ -1254,7 +1324,7 @@ def main():
         yearLabel = ctk.CTkLabel(yesterday_frame, text="Year", text_color="grey")
         yearLabel.pack()
         yearCombo = ttk.Combobox(
-            yesterday_frame, state="disabled", values=["2022", "2023"]
+            yesterday_frame, state="disabled", values=["2022", "2023","2024"]
         )
         yearCombo.current(0)
         yearCombo.set(date.today().year)
@@ -1265,16 +1335,12 @@ def main():
             text="Start",
             fg_color="green",
             hover_color="#1bcf48",
-            command=run_recons,
+            command=lambda: (startWindow(), startProgress()),
         )
         startButton.pack(pady=(20, 0))
 
-        # progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
-        # progress_bar.pack_forget()
-
-        # progressThread = threading.Thread(target=loadingProgress)
-        # consoleThread = threading.Thread(target=topLevelConsole)
-
+        progress_bar = ttk.Progressbar(yesterday_frame, mode="indeterminate")
+        progress_bar.pack_forget()
         recons_frame.pack(fill="both", expand=True)
 
     # Make the window interactive
