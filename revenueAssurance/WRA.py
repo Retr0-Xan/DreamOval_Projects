@@ -6,6 +6,34 @@ from tkinter import ttk
 import csv
 from tkinter import filedialog
 from PIL import Image
+import os, sys
+
+
+def set_working_directory_to_script_location():
+    if getattr(sys, "frozen", False):
+        # We are running from a bundled executable
+        script_dir = os.path.dirname(sys.executable)
+    else:
+        # We are running the script directly
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    os.chdir(script_dir)
+    return script_dir
+
+
+# Call the function to set the working directory
+script_dir = set_working_directory_to_script_location()
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS2
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 def choose_file():
@@ -115,35 +143,33 @@ root.geometry("1260x600")
 style = ttk.Style(root)
 root.tk.call(
     "source",
-    "/Users/markayitey/Documents/ShadProj/Forest-ttk-theme-master/forest-light.tcl",
+    resource_path(f"{script_dir}/assets/Forest-ttk-theme-master/forest-light.tcl"),
 )
 style.theme_use("forest-light")
 
 merchants = []
 
-menu_frame = ctk.CTkFrame(
-    root, width=200, height=root.winfo_height(), fg_color="white"
-)
+menu_frame = ctk.CTkFrame(root, width=200, height=root.winfo_height(), fg_color="white")
 menu_frame.pack_propagate(False)
 menu_frame.pack(side="left", fill="y")
 
 
 logo_img = ctk.CTkImage(
-    Image.open("revenueAssurance/assets/KowriLogo.png"), size=(180, 60)
+    Image.open(resource_path(f"{script_dir}/assets/KowriLogo.png")), size=(180, 60)
 )
 label = ctk.CTkLabel(menu_frame, image=logo_img, text="")
 label.pack()
 
 dashboard_img = ctk.CTkImage(
-    Image.open("revenueAssurance/assets/monitor.png"), size=(38, 38)
+    Image.open(resource_path(f"{script_dir}/assets/monitor.png")), size=(38, 38)
 )
 history_img = ctk.CTkImage(
-    Image.open("revenueAssurance/assets/history.png"), size=(38, 38)
+    Image.open(resource_path(f"{script_dir}/assets/history.png")), size=(38, 38)
 )
 export_img = ctk.CTkImage(
-    Image.open("revenueAssurance/assets/export.png"), size=(15, 15)
+    Image.open(resource_path(f"{script_dir}/assets/export.png")), size=(15, 15)
 )
-plus_img = ctk.CTkImage(Image.open("revenueAssurance/assets/plus.png"), size=(15, 15))
+plus_img = ctk.CTkImage(Image.open(resource_path(f"{script_dir}/assets/plus.png")), size=(15, 15))
 
 
 dashboard_btn = ctk.CTkButton(
@@ -197,12 +223,12 @@ search_bar = ctk.CTkEntry(
     textvariable=filter_var,
     border_width=0,
 )
-search_bar.grid(column=0, row=0,padx=(250,0))
+search_bar.grid(column=0, row=0, padx=(250, 0))
 
 search_btn = ctk.CTkButton(
     option_frame, text="Search", fg_color="green", width=15, command=filter_data
 )
-search_btn.grid(column=1, row=0, padx=(6,30))
+search_btn.grid(column=1, row=0, padx=(6, 30))
 
 select_btn = ctk.CTkButton(
     option_frame,
@@ -215,7 +241,7 @@ select_btn = ctk.CTkButton(
     image=plus_img,
     compound="left",
 )
-select_btn.grid(column=5, row=0, padx=(0,30))
+select_btn.grid(column=5, row=0, padx=(0, 30))
 
 export_btn = ctk.CTkButton(
     option_frame,
@@ -234,7 +260,13 @@ table_frame = ctk.CTkFrame(root)
 table_frame.pack()
 table = ttk.Treeview(
     table_frame,
-    columns=("Merchants", "Total Volume", "Total Value", "Total Cost", "Total Comission"),
+    columns=(
+        "Merchants",
+        "Total Volume",
+        "Total Value",
+        "Total Cost",
+        "Total Comission",
+    ),
     show="headings",
     height=20,
 )

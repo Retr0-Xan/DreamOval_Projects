@@ -105,7 +105,7 @@ def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS2
     except Exception:
         base_path = os.path.abspath(".")
 
@@ -160,7 +160,7 @@ def get_write_double_ova_val(
     alt_recons_name: str,
     file_output_name: str,
 ):
-    ova_df1 = pd.read_excel(ova_file, skiprows=num_lines_of_header[0])
+    ova_df1 = pd.read_excel(f"{script_dir}/{ova_file}", skiprows=num_lines_of_header[0])
 
     ova_volume = len(ova_df1)
     ova_volumes[21] = ova_volume
@@ -199,8 +199,12 @@ def get_write_double_int_val(
 ):
     # see get_write_double_ova_val function
     try:
-        int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
-        int_df2 = pd.read_excel(int_files[1], skiprows=num_lines_of_header[1])
+        int_df1 = pd.read_excel(
+            f"{script_dir}/{int_files[0]}", skiprows=num_lines_of_header[0]
+        )
+        int_df2 = pd.read_excel(
+            f"{script_dir}/{int_files[1]}", skiprows=num_lines_of_header[1]
+        )
         int_df2 = int_df2.loc[int_df2["Status"] == "CONFIRMED"]
 
         int_volume = len(int_df1) + len(int_df2)
@@ -241,7 +245,9 @@ def get_write_double_int_val(
         try:
             int_files = tuple(item for item in int_files if item is not None)
             if int_files[0] == f"MPGS KC{yesterday}.xlsx":
-                int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
+                int_df1 = pd.read_excel(
+                    f"{script_dir}/{int_files[0]}", skiprows=num_lines_of_header[0]
+                )
                 int_volume = len(int_df1)
 
                 amount_col = ""
@@ -263,7 +269,9 @@ def get_write_double_int_val(
                 )
                 return int_volume, int_value
             elif int_files[0] == f"MPGS_trn{yesterday}.xlsx":
-                int_df1 = pd.read_excel(int_files[0], skiprows=num_lines_of_header[0])
+                int_df1 = pd.read_excel(
+                    f"{script_dir}/{int_files[0]}", skiprows=num_lines_of_header[0]
+                )
                 int_df1 = int_df1.loc[int_df1["Status"] == "CONFIRMED"]
                 int_volume = len(int_df1)
 
@@ -500,7 +508,9 @@ def recons_ops(
 
     if ova_file_name is not None:
         # put the data into a dataframe
-        ova_file_df = pd.read_excel(ova_file_name, skiprows=ova_header_lines)
+        ova_file_df = pd.read_excel(
+            f"{script_dir}/{ova_file_name}", skiprows=ova_header_lines
+        )
         ova_id_name = ova_id
         if ova_status_flag is not None:
             ova_file_df = ova_file_df.loc[
@@ -535,7 +545,9 @@ def recons_ops(
 
     # ----------------------- INTEGRATOR/ DUPLICATES --------------------
     if int_file_name is not None:
-        int_file_df = pd.read_excel(int_file_name, skiprows=int_header_lines)
+        int_file_df = pd.read_excel(
+            f"{script_dir}/{int_file_name}", skiprows=int_header_lines
+        )
         int_id_name = int_id
         for name in service_name_headers:
             if name in int_file_df.columns:
@@ -583,10 +595,7 @@ def recons_ops(
                     amount_col = name
                     break
         int_value = int_file_df[amount_col].abs().sum()
-        if int_values[list_index] == 0:
-            int_values[list_index] = int_value
-        else:
-            int_values[list_index] += int_value
+        int_values[list_index] = int_value
 
         print(f"{file_output_name} INT_VALUE : {int_value}")
         dup, dup_val = find_duplicates(int_file_df)
@@ -681,8 +690,8 @@ def gip_custom(
     )
     ova_files = tuple(item for item in ova_files if item is not None)
     if len(ova_files) == 2:
-        ova_df1 = pd.read_excel(ova_files[0])
-        ova_df2 = pd.read_excel(ova_files[1])
+        ova_df1 = pd.read_excel(f"{script_dir}/{ova_files[0]}")
+        ova_df2 = pd.read_excel(f"{script_dir}/{ova_files[1]}")
 
         ova_volume = len(ova_df1) + len(ova_df2)
         ova_volumes[10] = ova_volume
@@ -705,7 +714,7 @@ def gip_custom(
             )  # save original data into first sheet of new file
     # ---------------------------- INT -------------------------
     if int_file is not None:
-        int_df = pd.read_excel(int_file)
+        int_df = pd.read_excel(f"{script_dir}/{int_file}")
         int_volume = len(int_df)
         int_volumes[10] = int_volume
         amount_col = ""
@@ -1106,9 +1115,7 @@ def main():
         recons_frame = ctk.CTkFrame(tab, fg_color="white")
 
         logo_img = ctk.CTkImage(
-            Image.open(
-                resource_path("/Users/markayitey/Documents/DreamOval_Projects/Recons Automation - GUI/assets/KowriLogo.png")
-            ),
+            Image.open(resource_path(f"{script_dir}/assets/KowriLogo.png")),
             size=(200, 70),
         )
         label = ctk.CTkLabel(recons_frame, image=logo_img, text="", fg_color="white")
@@ -1215,9 +1222,13 @@ def main():
                 GIPday = int(customDay) + 1
                 if int(customDay) < 10:
                     customDay = "0" + customDay
+                else:
+                    customDay = customDay
                 month_name = calendar.month_abbr[int(customMonth)]
                 if int(customMonth) < 10:
                     customMonth = "0" + customMonth
+                else:
+                    customMonth = customMonth
                 yesterday = "_" + customDay + " " + month_name + "_" + customYear
                 print(yesterday)
 
@@ -1268,7 +1279,6 @@ def main():
                     GIPday = str(date.today().day + 1)
                 GIPdate = str(str(date.today().year) + str(GIPmonth) + str((GIPday)))
                 print(GIPdate)
-
 
             ova_volumes = [0] * 30
             ova_values = [0] * 30
@@ -1324,7 +1334,7 @@ def main():
         yearLabel = ctk.CTkLabel(yesterday_frame, text="Year", text_color="grey")
         yearLabel.pack()
         yearCombo = ttk.Combobox(
-            yesterday_frame, state="disabled", values=["2022", "2023","2024"]
+            yesterday_frame, state="disabled", values=["2022", "2023", "2024"]
         )
         yearCombo.current(0)
         yearCombo.set(date.today().year)
@@ -1353,7 +1363,10 @@ def main():
 
     style = ttk.Style(root)
     # Import the tcl file
-    root.tk.call("source", resource_path("assets/Forest-ttk-theme-master/forest-light.tcl"))
+    root.tk.call(
+        "source",
+        resource_path(f"{script_dir}/assets/Forest-ttk-theme-master/forest-light.tcl"),
+    )
 
     # Set the theme with the theme_use method
     style.theme_use("forest-light")
