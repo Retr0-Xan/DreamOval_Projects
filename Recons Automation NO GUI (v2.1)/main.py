@@ -38,7 +38,7 @@ def convert_csv_to_xlsx(csv_file_path):
     csv_data = pd.read_csv(csv_file_path)
     xlsx_file_path = csv_file_path.replace(".csv", ".xlsx")
     csv_data.to_excel(xlsx_file_path, index=False)
-    os.remove(csv_file_path)  # Remove the original CSV file after conversion
+    # os.remove(csv_file_path)  # Remove the original CSV file after conversion
     return xlsx_file_path
 
 # Function to extract the date once and use it globally
