@@ -12,7 +12,7 @@ def list_files_recursive(directory):
 current_directory = os.getcwd()
 
 #Listing all the files in this directory
-files = list_files_recursive(f"{current_directory}/combineAnyData")
+files = list_files_recursive(f"{current_directory}")
 
 #Function to combine the data
 def combine_data(output_name, ext):
@@ -26,7 +26,7 @@ def combine_data(output_name, ext):
             if ext in file:
                 print(file)
                 complete_file_df = pd.concat([complete_file_df, pd.read_csv(file)])
-    complete_file_df.to_csv(f"./combineAnyData/data/{output_name}.csv", index=False)
+      
 
 
 #Name of the final output file with the combined data
