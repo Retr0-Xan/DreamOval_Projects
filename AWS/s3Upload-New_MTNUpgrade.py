@@ -106,6 +106,7 @@ def getData(file: str):
         skiprows = 0
         channel = "CardProvider"
 
+
     try:
         print("--------------------------- attempting csv read ---------------------------------")
         # Try reading the file as CSV
@@ -189,12 +190,12 @@ for file in files:
                 year = f"20{file_name[-6:-4]}" #csv 
                 month = file_name[-10:-7] #csv
                 path_month = month_to_number[file_name[-10:-7]] #csv
-                day = file_name[-13:-10] #csv
+                day = file_name[-13:-11] #csv
             elif 'xlsx' in file_name:
                 year = f"20{file_name[-7:-5]}" #xlsx
                 month = file_name[-11:-8] #xlsx
                 path_month = month_to_number[file_name[-11:-8]] #xlsx
-                day = file_name[-14:-11] #xlsx
+                day = file_name[-14:-12] #xlsx
             if "_" in day:
                 day = day.replace("_", "")
                 path_day = f"0{day}"
@@ -260,6 +261,7 @@ for file in files:
             Key = f"{channel_type}/{collOrDisb}/year={year}/month={path_month}/day={path_day}/{new_file_name}"
             # Upload the file to the S3 bucket
             s3_client.upload_file(file, "all-kowri-datalake", Key)
+            os.remove(file)
     except KeyError as e:
         # If a KeyError occurs, add the file to the error list and continue to the next file
         error_list.append(file)

@@ -53,7 +53,7 @@ def rename_files(base_dir, renames_dict, global_date=None):
 
                     # Get full paths for the old file and the new location in the parent directory
                     old_file_path = os.path.join(full_dir_path, file_name)
-                    new_file_path = os.path.join(parent_dir, new_name)  # Save to parent directory (cwd)
+                    new_file_path = os.path.join(f"{parent_dir}/data", new_name)  # Save to parent directory (cwd)
 
                     # Move and rename the file
                     os.rename(old_file_path, new_file_path)
@@ -87,6 +87,4 @@ if global_mtn_date:
 else:
     print("No valid date found in OVAs files.")
 
-# Rename files in the mBase folder using the same global date and move to the parent directory
-mbase_dir = os.path.join(base_directory, 'mBase')
-rename_files(mbase_dir, mBase_RENAMES, global_mtn_date)
+
