@@ -106,6 +106,7 @@ def get_write_double_ova_val(
     num_lines_of_header: Tuple[int, int],
     alt_recons_name: str,
     file_output_name: str,
+    flag:str
 ):
     """
     # Note: This function is only used in BB MIG recons.
@@ -423,6 +424,8 @@ def run_recons(
     ova_id: str,
     int_id: str,
     alt_ova_id: str,
+    ova_flag: str,
+    int_flag:str,
     alt_int_id: str or None = None,
     *,
     mb_service_name: str or None = None,
@@ -750,6 +753,23 @@ if __name__ == "__main__":
     list_index = 0
     run_recons(
         (
+            check_for_file(f"MPGS{yesterday}.xlsx"),
+            check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+        ),
+        num_lines_of_header=(0, 0),
+        alt_recons_name=f"MPGS{yesterday}",
+        file_output_name="MPGS",
+        mb_status_flag="CONFIRMED",
+        alt_int_id="Transaction Id",
+        alt_ova_id="Order ID",
+        list_index=0,
+        ova_id="Order ID",
+        int_id="Transaction Id",
+        ova_flag="positive",
+        int_flag="positive",
+    )
+    run_recons(
+        (
             check_for_file(f"Ngenius{yesterday}.xlsx"),
             check_for_file(f"Ngenius KC{yesterday}.xlsx"),
         ),
@@ -763,6 +783,8 @@ if __name__ == "__main__":
         int_id="Universal Transaction Reference",
         alt_int_id="ID",
         alt_ova_id="System Generated Order",
+        ova_flag="positive",
+        int_flag="positive",
     )
     try:
         run_recons(
@@ -778,6 +800,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Id",
+            ova_flag="negative",
+            int_flag="positive",
         )
     except:
         ova_volumes[list_index] = 0
@@ -797,6 +821,8 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_int_id="BillerTransId",
             alt_ova_id="Id",
+            ova_flag="negative",
+            int_flag="positive",
         )
     try:
         run_recons(
@@ -812,6 +838,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_ova_id="Id",
             alt_int_id="Bill Er Trans ID",
+            ova_flag="positive",
+            int_flag="positive",
         )
     except:
         ova_volumes[list_index] = 0
@@ -831,48 +859,50 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_ova_id="Id",
             alt_int_id="BillerTransId",
+            ova_flag="positive",
+            int_flag="positive",
         )
-    run_recons(
-         (
-             check_for_file(f"KR AT{yesterday}.xlsx"),
-             check_for_file(f"KR AT Coll_mBase{yesterday}.xlsx"),
-         ),
-         num_lines_of_header=(0, 0),
-         alt_recons_name=f"AT Cashin{yesterday}",
-         file_output_name="AT_KR_Cashin",
-         ova_status_flag="Merchant Payment",
-         ova_status_col="Service Type",
-         mb_status_flag="CONFIRMED",
-         list_index=4,
-         ova_id="External Transaction Id",
-         int_id="Transaction Id",
-         alt_int_id="",
-         alt_ova_id="",
-     )
-    run_recons(
-        (
-            check_for_file(f"KR AT{yesterday}.xlsx"),
-            check_for_file(f"KR AT Disb_mBase{yesterday}.xlsx"),
-        ),
-        num_lines_of_header=(0, 0),
-        alt_recons_name=f"AT Cashout{yesterday}",
-        file_output_name="AT_KR_Cashout",
-        ova_status_flag="Cash in",
-        ova_status_col="Service Type",
-        mb_status_flag="CONFIRMED",
-        list_index=5,
-        ova_id="External Transaction Id",
-        int_id="Transaction Id",
-        alt_int_id="Transaction Id",
-        alt_ova_id="External Transaction Id",
-    )
+    # run_recons(
+    #      (
+    #          check_for_file(f"KR AT{yesterday}.xlsx"),
+    #          check_for_file(f"KR AT Coll_mBase{yesterday}.xlsx"),
+    #      ),
+    #      num_lines_of_header=(0, 0),
+    #      alt_recons_name=f"AT Cashin{yesterday}",
+    #      file_output_name="AT_KR_Cashin",
+    #      ova_status_flag="Merchant Payment",
+    #      ova_status_col="Service Type",
+    #      mb_status_flag="CONFIRMED",
+    #      list_index=4,
+    #      ova_id="External Transaction Id",
+    #      int_id="Transaction Id",
+    #      alt_int_id="",
+    #      alt_ova_id="",
+    #  )
+    # run_recons(
+    #     (
+    #         check_for_file(f"KR AT{yesterday}.xlsx"),
+    #         check_for_file(f"KR AT Disb_mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name=f"AT Cashout{yesterday}",
+    #     file_output_name="AT_KR_Cashout",
+    #     ova_status_flag="Cash in",
+    #     ova_status_col="Service Type",
+    #     mb_status_flag="CONFIRMED",
+    #     list_index=5,
+    #     ova_id="External Transaction Id",
+    #     int_id="Transaction Id",
+    #     alt_int_id="Transaction Id",
+    #     alt_ova_id="External Transaction Id",
+    # )
     try:
         run_recons(
             (
                 check_for_file(f"KR Telecel Cashin{yesterday}.xlsx"),
                 check_for_file(f"KR Telecel Coll_mBase{yesterday}.xlsx"),
             ),
-            num_lines_of_header=(5, 0),
+            num_lines_of_header=(0, 0),
             alt_recons_name=f"KR Telecel Cashin{yesterday}",
             file_output_name="Telecel KR Cashin",
             mb_status_flag="CONFIRMED",
@@ -881,6 +911,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
+            ova_flag="positive",
+            int_flag="positive",
         )
     except:
         ova_volumes[list_index] = 0
@@ -892,7 +924,7 @@ if __name__ == "__main__":
                 check_for_file(f"KR Telecel Cashin{yesterday}.xlsx"),
                 check_for_file(f"KR Telecel Coll_mBase{yesterday}.xlsx"),
             ),
-            num_lines_of_header=(5, 0),
+            num_lines_of_header=(0, 0),
             alt_recons_name=f"KR Telecel Cashin{yesterday}",
             file_output_name="Telecel KR Cashin",
             mb_status_flag="CONFIRMED",
@@ -901,6 +933,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
+            ova_flag="positive",
+            int_flag="positive",
         )
 
     try:
@@ -909,7 +943,7 @@ if __name__ == "__main__":
                 check_for_file(f"KR Telecel Cashout{yesterday}.xlsx"),
                 check_for_file(f"KR Telecel Disb_mBase{yesterday}.xlsx"),
             ),
-            num_lines_of_header=(5, 0),
+            num_lines_of_header=(0, 0),
             alt_recons_name=f"KR Telecel Cashout{yesterday}",
             file_output_name="Telecel KR Cashout",
             mb_status_flag="CONFIRMED",
@@ -918,6 +952,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
+            ova_flag="negative",
+            int_flag="positive",
         )
     except:
         ova_volumes[list_index] = 0
@@ -929,7 +965,7 @@ if __name__ == "__main__":
                 check_for_file(f"KR Telecel Cashout{yesterday}.xlsx"),
                 check_for_file(f"KR Telecel Disb_mBase{yesterday}.xlsx"),
             ),
-            num_lines_of_header=(5, 0),
+            num_lines_of_header=(0, 0),
             alt_recons_name=f"KR Telecel Cashout{yesterday}",
             file_output_name="Telecel KR Cashout",
             mb_status_flag="CONFIRMED",
@@ -938,6 +974,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
+            ova_flag="negative",
+            int_flag="positive",
         )
 
 
@@ -955,6 +993,8 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
+        ova_flag="positive",
+        int_flag="positive",
     )
 
     run_recons(
@@ -971,7 +1011,10 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
+        ova_flag="negative",
+        int_flag="positive",
     )
+    
     run_recons(
         (
             check_for_file(f"GIP{yesterday}.xlsx"),
@@ -984,9 +1027,11 @@ if __name__ == "__main__":
         list_index=10,
         alt_recons_name=f"GIP_{yesterday}",
         alt_ova_id="REFERENCE_NUMBER",
-        alt_int_id="IntegratorTransId"
-
+        alt_int_id="IntegratorTransId",
+        ova_flag="positive",
+        int_flag="positive",
     )
+    
     # gip_custom(
     #     ova_files=(
     #         check_for_file(f"slydepay_sending_{GIPdate}'.xlsx"),
@@ -1015,21 +1060,6 @@ update_recons_sheet()
     #     int_id="Universal Transaction Reference",
     #     alt_int_id="Receipt No",
     #     alt_ova_id="Order Code",
-# run_recons(
-#     (
-#         check_for_file(f"MPGS{yesterday}.xlsx"),
-#         check_for_file(f"MPGS_trn{yesterday}.xlsx"),
-#     ),
-#     num_lines_of_header=(0, 0),
-#     alt_recons_name=f"MPGS{yesterday}",
-#     file_output_name="MPGS",
-#     mb_status_flag="CONFIRMED",
-#     alt_int_id="Transaction Id",
-#     alt_ova_id="Order ID",
-#     list_index=22,
-#     ova_id="Order ID",
-#     int_id="Transaction Id",
-# )
     # )
     # run_recons(
     #     (

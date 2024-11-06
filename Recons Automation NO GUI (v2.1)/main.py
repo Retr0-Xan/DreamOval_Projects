@@ -28,14 +28,16 @@ mBase_RENAMES = {
     "MPGS": "MPGS_trn"
 }
 
+skiprow_number = 0
+
 # Function to convert the date format
 def convert_date_format(date_str):
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
     return date_obj.strftime("_%d %b_%y")
 
 # Function to convert CSV to XLSX
-def convert_csv_to_xlsx(csv_file_path):
-    csv_data = pd.read_csv(csv_file_path)
+def convert_csv_to_xlsx(csv_file_path,skiprow_number):
+    csv_data = pd.read_csv(csv_file_path,skiprows=skiprow_number)
     xlsx_file_path = csv_file_path.replace(".csv", ".xlsx")
     csv_data.to_excel(xlsx_file_path, index=False)
     # os.remove(csv_file_path)  # Remove the original CSV file after conversion
@@ -72,7 +74,11 @@ def rename_files(base_dir, renames_dict, global_date=None):
                     # Convert CSV to XLSX if necessary
                     if file_name.endswith(".csv"):
                         csv_file_path = os.path.join(full_dir_path, file_name)
-                        file_name = convert_csv_to_xlsx(csv_file_path)
+                        if "ORG_830002" in file_name:
+                            skiprow_number = 5
+                        else:
+                            skiprow_number = 0
+                        file_name = convert_csv_to_xlsx(csv_file_path,skiprow_number=skiprow_number)
                         file_name = os.path.basename(file_name)
 
                     # Handling files (ignoring time portion like 'T09' in the name)
