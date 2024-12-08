@@ -424,8 +424,6 @@ def run_recons(
     ova_id: str,
     int_id: str,
     alt_ova_id: str,
-    ova_flag: str,
-    int_flag:str,
     alt_int_id: str or None = None,
     *,
     mb_service_name: str or None = None,
@@ -683,7 +681,7 @@ def gip_custom(
         )
 
 
-def get_missing_tx(
+def  get_missing_tx(
     x: pd.Series,
     y: pd.Series,
     alt_x: pd.Series,
@@ -751,31 +749,49 @@ if __name__ == "__main__":
     dup_volumes = [0] * 17
     dup_values = [0.00] * 17
     list_index = 0
+    # run_recons(
+    #     (
+    #         check_for_file(f"MPGS{yesterday}.xlsx"),
+    #         check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name=f"MPGS{yesterday}",
+    #     file_output_name="MPGS",
+    #     mb_status_flag="CONFIRMED",
+    #     alt_int_id="Transaction Id",
+    #     alt_ova_id="Order ID",
+    #     list_index=0,
+    #     ova_id="Order ID",
+    #     int_id="Transaction Id",
+    #   
+    #   
+    # )
     run_recons(
         (
-            check_for_file(f"MPGS{yesterday}.xlsx"),
-            check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+            check_for_file(f"Ngenius KB{yesterday}.xlsx"),
+            check_for_file(f"Ngenius KB mBase{yesterday}.xlsx"),
         ),
         num_lines_of_header=(0, 0),
-        alt_recons_name=f"MPGS{yesterday}",
-        file_output_name="MPGS",
-        mb_status_flag="CONFIRMED",
-        alt_int_id="Transaction Id",
-        alt_ova_id="Order ID",
-        list_index=0,
-        ova_id="Order ID",
-        int_id="Transaction Id",
-        ova_flag="positive",
-        int_flag="positive",
+        alt_recons_name=f"Ngenius KB{yesterday}",
+        file_output_name="Ngenius KB",
+        ova_status_flag="SUCCESS",
+        ova_status_col="Payment Status",
+        list_index=1,
+        ova_id="Merchant Defined Order Number",
+        int_id="IntegratorTransId",
+        alt_int_id="ID",
+        alt_ova_id="System Generated Order",
+
+
     )
     run_recons(
         (
-            check_for_file(f"Ngenius{yesterday}.xlsx"),
             check_for_file(f"Ngenius KC{yesterday}.xlsx"),
+            check_for_file(f"Ngenius KC mBase{yesterday}.xlsx"),
         ),
         num_lines_of_header=(0, 0),
-        alt_recons_name=f"Ngenius{yesterday}",
-        file_output_name="Ngenius",
+        alt_recons_name=f"Ngenius KC{yesterday}",
+        file_output_name="Ngenius KC",
         ova_status_flag="SUCCESS",
         ova_status_col="Payment Status",
         list_index=1,
@@ -783,8 +799,8 @@ if __name__ == "__main__":
         int_id="Universal Transaction Reference",
         alt_int_id="ID",
         alt_ova_id="System Generated Order",
-        ova_flag="positive",
-        int_flag="positive",
+
+
     )
     try:
         run_recons(
@@ -800,8 +816,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Id",
-            ova_flag="negative",
-            int_flag="positive",
+    
+    
         )
     except:
         ova_volumes[list_index] = 0
@@ -821,8 +837,8 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_int_id="BillerTransId",
             alt_ova_id="Id",
-            ova_flag="negative",
-            int_flag="positive",
+    
+    
         )
     try:
         run_recons(
@@ -838,8 +854,6 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_ova_id="Id",
             alt_int_id="Bill Er Trans ID",
-            ova_flag="positive",
-            int_flag="positive",
         )
     except:
         ova_volumes[list_index] = 0
@@ -859,8 +873,8 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_ova_id="Id",
             alt_int_id="BillerTransId",
-            ova_flag="positive",
-            int_flag="positive",
+    
+    
         )
     # run_recons(
     #      (
@@ -876,8 +890,8 @@ if __name__ == "__main__":
     #      list_index=4,
     #      ova_id="External Transaction Id",
     #      int_id="Transaction Id",
-    #      alt_int_id="",
-    #      alt_ova_id="",
+
+
     #  )
     # run_recons(
     #     (
@@ -911,8 +925,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
-            ova_flag="positive",
-            int_flag="positive",
+    
+    
         )
     except:
         ova_volumes[list_index] = 0
@@ -933,8 +947,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
-            ova_flag="positive",
-            int_flag="positive",
+    
+    
         )
 
     try:
@@ -952,8 +966,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
-            ova_flag="negative",
-            int_flag="positive",
+    
+    
         )
     except:
         ova_volumes[list_index] = 0
@@ -974,8 +988,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
-            ova_flag="negative",
-            int_flag="positive",
+    
+    
         )
 
 
@@ -993,8 +1007,8 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
-        ova_flag="positive",
-        int_flag="positive",
+
+
     )
 
     run_recons(
@@ -1011,8 +1025,8 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
-        ova_flag="negative",
-        int_flag="positive",
+
+
     )
     
     run_recons(
@@ -1023,13 +1037,13 @@ if __name__ == "__main__":
         num_lines_of_header=(0, 0),
         file_output_name="GIP",
         ova_id="REFERENCE_NUMBER",
-        int_id="IntegratorTransId",
+        int_id="BillerTransId",
         list_index=10,
         alt_recons_name=f"GIP_{yesterday}",
         alt_ova_id="REFERENCE_NUMBER",
         alt_int_id="IntegratorTransId",
-        ova_flag="positive",
-        int_flag="positive",
+
+
     )
     
     # gip_custom(

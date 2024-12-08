@@ -12,7 +12,7 @@ OVAs_RENAMES = {
     "NPONTU DISBURSEMENTS": "Npontu MTN Debit",
     "NGENIUS": "Ngenius",
     "GIP": "GIP",
-    "MPGS": "MPGS",
+    # "MPGS": "MPGS",
 }
 
 # mBase Rename Dictionary
@@ -21,14 +21,17 @@ mBase_RENAMES = {
     "KR MTN DISBURSEMENTS": "KR MTN Disb_mBase",
     "KR TELECEL COLLECTIONS": "KR Telecel Coll_mBase",
     "KR TELECEL DISBURSEMENTS": "KR Telecel Disb_mBase",
-    "NGENIUS KC": "Ngenius KC",
+    "NGENIUS KC": "Ngenius KC mBase",
+    "NGENIUS KB": "Ngenius KB mBase",
     "NPONTU MTN COLLECTIONS": "Npontu MTN Coll_mBase",
     "NPONTU MTN DISBURSEMENTS": "Npontu MTN Disb_mBase",
     "GIP": "GIP Metabase",
-    "MPGS": "MPGS_trn"
+    # "MPGS": "MPGS_trn"
 }
 
 skiprow_number = 0
+
+ngen_date = ""
 
 # Function to convert the date format
 def convert_date_format(date_str):
@@ -53,6 +56,7 @@ def extract_date_from_filename(file_name):
 
 # Function to rename files and move them to the parent directory (cwd)
 def rename_files(base_dir, renames_dict, global_date=None):
+    global ngen_date
     parent_dir = os.path.dirname(base_dir)  # Get the parent directory (where the script is located)
     
     for dir_name, new_prefix in renames_dict.items():
@@ -76,6 +80,7 @@ def rename_files(base_dir, renames_dict, global_date=None):
                         csv_file_path = os.path.join(full_dir_path, file_name)
                         if "ORG_830002" in file_name:
                             skiprow_number = 5
+                            # Change this back to 5
                         else:
                             skiprow_number = 0
                         file_name = convert_csv_to_xlsx(csv_file_path,skiprow_number=skiprow_number)
@@ -83,6 +88,7 @@ def rename_files(base_dir, renames_dict, global_date=None):
 
                     # Handling files (ignoring time portion like 'T09' in the name)
                     formatted_date = convert_date_format(date_to_use)
+                    ngen_date = formatted_date
                     new_name = f"{new_prefix}{formatted_date}.xlsx"
 
                     # Get full paths for the old file and the new location in the parent directory
@@ -124,3 +130,11 @@ else:
 # Rename files in the mBase folder using the same global date and move to the parent directory
 mbase_dir = os.path.join(base_directory, 'mBase')
 rename_files(mbase_dir, mBase_RENAMES, global_mtn_date)
+
+ngen_df = pd.read_excel(f"Ngenius{ngen_date}.xlsx")
+
+kc_df = ngen_df[ngen_df['Outlet'] == 'KOWRI APP']
+kb_df = ngen_df[ngen_df['Outlet'] != 'KOWRI APP']
+
+kc_df.to_excel(f"Ngenius KC{ngen_date}.xlsx", index=False)
+kb_df.to_excel(f"Ngenius KB{ngen_date}.xlsx", index=False)
