@@ -72,6 +72,7 @@ MTN_UNWANTED_HEADERS = [
     "External FX rate",
     "External service provider",
     "Discount",
+    # "Promotion"
     "From / Promotion",
     "To / Promotion",
     "Coupon",
@@ -79,7 +80,7 @@ MTN_UNWANTED_HEADERS = [
 ]
 
 # List of unwanted headers for Vodafone transactions
-VODAFONE_UNWANTED_HEADERS = ["Reason Type", "Opposite Party", "Linked Transaction ID"]
+VODAFONE_UNWANTED_HEADERS = ["Linked Transaction ID"]
 
 
 # Function to get data from a file
@@ -111,6 +112,7 @@ def getData(file: str):
         print("--------------------------- attempting csv read ---------------------------------")
         # Try reading the file as CSV
         data = pd.read_csv(file, skiprows=skiprows)
+        # data = pd.read_csv(file)
     except:
         try:
             print("--------------------------- attempting excel read ---------------------------------")
@@ -123,7 +125,7 @@ def getData(file: str):
             pass
 
     # Drop unwanted headers from the DataFrame
-    data = data.drop(columns=unwanted_headers)
+    # data = data.drop(columns=unwanted_headers)
     print(data)
     return data, channel
 

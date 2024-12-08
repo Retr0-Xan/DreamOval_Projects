@@ -12,6 +12,7 @@ OVAs_RENAMES = {
     "NGENIUS": "Ngenius",
     "GIP": "GIP",
     "MPGS": "MPGS",
+    "WAVE": "Wave",
 }
 
 # Function to convert the date format
