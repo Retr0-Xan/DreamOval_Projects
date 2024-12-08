@@ -39,7 +39,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEntry):
+def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEntry,name_entry:ctk.CTkEntry):
     # Create an S3 client
     s3_client = boto3.client("s3")
     # List all S3 buckets
@@ -49,6 +49,7 @@ def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEnt
 
     start_date = datetime.strptime(from_date.get(),"%d-%m-%Y")
     end_date = datetime.strptime(to_date.get(),"%d-%m-%Y")
+    output_file_name = name_entry.get()
 
     current_date = start_date
     file_name_locs = {
@@ -60,13 +61,15 @@ def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEnt
         "Card-GH-GTMPGS":"KB_CARD_GT_Transactions",
         "SecurePay-GH-Collections":"SecurePay_Collections",
         "SecurePay-GH-Disbursements":"SecurePay_Disbursements",
+        "KBPlatform-MerchantOrder":"KBPlatform_merchantOrder",
+        "KBPlatform-Transaction":"KBPlatform_transaction",
     }
 
     complete_file_df = pd.DataFrame()
     while current_date <= end_date:
         print("-------Gathering Data--------")
         current_year = str(current_date.year)
-        current_month = str(current_date.month)
+        current_month = str(current_date.month).zfill(2)
         current_day = str(current_date.day).zfill(2)
         file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'  # The key of the file you want to download
         print(file_key)
@@ -78,7 +81,7 @@ def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEnt
             complete_file_df = pd.concat([complete_file_df , pd.read_excel(response['Body'])])
         print(f"Day {current_day}: Done...")
         current_date += timedelta(days=1) 
-    complete_file_df.to_csv(f"{current_directory}/data/query_result_{datetime.now().date()}.csv", index=False)
+    complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
 
     folder_path = f"{current_directory}/data"
     if platform.system() == "Windows":
@@ -97,7 +100,7 @@ def main():
         date_window.geometry("350x350")
         
         # Create and place the calendar in the window
-        cal = Calendar(date_window, selectmode="day", year=2023, month=11, day=6,date_pattern="dd-mm-yyyy")
+        cal = Calendar(date_window, selectmode="day", year=2024, month=11, day=6,date_pattern="dd-mm-yyyy")
         cal.pack(pady=20)
 
         def grab_date():
@@ -133,42 +136,53 @@ def main():
 
     # Initialize Tkinter variables after creating root
     channels = ["MTN-GH-Collections", "MTN-GH-Disbursements", "Vodafone-GH-Collections", "Vodafone-GH-Disbursements", "Card-GH-GTMPGS", "InstantPayment-GH", 
-              "Card-GH-NGENIUS", "SecurePay-GH-Collections", "SecurePay-GH-Disbursements"]
+              "Card-GH-NGENIUS", "SecurePay-GH-Collections", "SecurePay-GH-Disbursements","KBPlatform-MerchantOrder","KBPlatform-Transaction"]
     channel_var = tk.StringVar(value=channels[0])
 
     # Channel dropdown
     channel_label = ctk.CTkLabel(main_frame, text="Select Channel:",text_color="green")
     channel_label.pack(pady=(20, 5))
-    channel_dropdown = ctk.CTkOptionMenu(main_frame, variable=channel_var, values=channels,fg_color="white",button_color="grey",dropdown_fg_color="white",text_color="black",dropdown_text_color="black",dropdown_hover_color="white")
+    channel_dropdown = ctk.CTkOptionMenu(main_frame, variable=channel_var, values=channels,fg_color="white",button_color="green",dropdown_fg_color="white",text_color="black",dropdown_text_color="black",dropdown_hover_color="green")
     channel_dropdown.pack(pady=5)
 
-    from_label =  ctk.CTkLabel(main_frame, text="From:",text_color="green")
+    # Date picker
+    dates_frame = ctk.CTkFrame(main_frame, fg_color="white",bg_color="white")
+    dates_frame.pack(pady=(20, 5))
+
+
+    from_frame = ctk.CTkFrame(dates_frame, fg_color="white")
+    from_frame.grid(row=0,column=0)
+    from_label =  ctk.CTkLabel(from_frame, text="From:",text_color="green")
     from_label.pack(pady=(20, 5))
 
-    from_frame = ctk.CTkFrame(main_frame, fg_color="white")
-    from_frame.pack(pady=(20, 5))
-    from_entry = ctk.CTkEntry(from_frame, fg_color="white",bg_color="grey",text_color="black")
-    from_entry.pack(pady=5)
+    from_entry = ctk.CTkEntry(from_frame, fg_color="white",bg_color="white",text_color="black")
+    from_entry.pack(pady=5,padx=20)
     # Create a button to open the date picker
     date_button = ctk.CTkButton(from_frame, text="Select Date", command=lambda: open_date_picker(from_entry,root),text_color="white",fg_color="green")
     date_button.pack(pady=5)
 
-    to_label =  ctk.CTkLabel(main_frame, text="To:",text_color="green")
+
+    to_frame = ctk.CTkFrame(dates_frame, fg_color="white")
+    to_frame.grid(row=0,column=1)
+    to_label =  ctk.CTkLabel(to_frame, text="To:",text_color="green")
     to_label.pack(pady=(20, 5))
 
-    to_frame = ctk.CTkFrame(main_frame, fg_color="white")
-    to_frame.pack(pady=(20, 5))
-
-    to_entry = ctk.CTkEntry(to_frame, fg_color="white",bg_color="grey",text_color="black")
+    to_entry = ctk.CTkEntry(to_frame, fg_color="white",bg_color="white",text_color="black")
     to_entry.pack(pady=5)
     # Create a button to open the date picker
     date_button = ctk.CTkButton(to_frame, text="Select Date", command=lambda: open_date_picker(to_entry,root),text_color="white",fg_color="green")
     date_button.pack(pady=5)
 
+    outName_entry = ctk.CTkEntry(main_frame, fg_color="white",bg_color="white",text_color="black",placeholder_text="Enter Output Name",width=300)
+    outName_entry.pack(pady=5)
 
     # Submit button
-    submit_button = ctk.CTkButton(main_frame, text="Run Query",command=lambda: threading.Thread(target=run_query_thread,args=(channel_var, from_entry, to_entry, submit_button)).start(),text_color="white",fg_color="green")
+    submit_button = ctk.CTkButton(main_frame, text="Run Query",command=lambda: threading.Thread(target=check_data_validity,args=(channel_var, from_entry, to_entry, submit_button,outName_entry)).start(),text_color="white",fg_color="green")
     submit_button.pack(pady=(30, 10))
+
+    status_label = ctk.CTkLabel(main_frame, text="", text_color="green")
+    status_label.pack(pady=(20, 5))
+
 
     style = ttk.Style(root)
     # Import the tcl file
@@ -180,19 +194,35 @@ def main():
     def update_widgets(button: ctk.CTkButton, status):
         if status == "running":
             button.configure(state="disabled", fg_color="grey")
+            status_label.configure(text="Gathering Data...", text_color="green")
         elif status == "done":
             button.configure(state="normal", fg_color="green")
+            status_label.configure(text="Data Query Completed", text_color="green")
 
-
-    def run_query_thread(channel_var, from_entry, to_entry, button):
+    def run_query_thread(channel_var, from_entry, to_entry, button,name_entry):
         # Disable the button and update its color
         update_widgets(button, "running")
 
         # Call your run_query function (the time-consuming operation)
-        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry)
+        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry,name_entry=name_entry)
 
         # Once done, re-enable the button
         update_widgets(button, "done")
+
+    def check_data_validity(channel_var,from_entry, to_entry,button,name_entry):
+        # Check if the date is valid
+        if not from_entry.get() or not to_entry.get() or not name_entry.get():
+            status_label.configure(text="Please fill in all fields", text_color="red")
+            return
+        
+        try:
+            run_query_thread(channel_var, from_entry, to_entry, button,name_entry)
+        except:
+            status_label.configure(text="Error Occurred", text_color="red")
+            button.configure(state="normal", fg_color="green")
+
+
+
 
 
 
