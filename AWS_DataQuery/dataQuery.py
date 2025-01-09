@@ -6,21 +6,17 @@ import tkinter as tk
 from tkinter import Toplevel
 from tkinter import ttk
 from tkcalendar import Calendar
-from tkinter import ttk
 from PIL import Image, ImageTk
-import os,sys
-import math
-from datetime import datetime,timedelta
-import subprocess
+import sys
 import platform
 import threading
+from datetime import datetime, timedelta
+import subprocess
 
 def set_working_directory_to_script_location():
     if getattr(sys, "frozen", False):
-        # We are running from a bundled executable
         script_dir = os.path.dirname(sys.executable)
     else:
-        # We are running the script directly
         script_dir = os.path.dirname(os.path.abspath(__file__))
 
     os.chdir(script_dir)
@@ -29,210 +25,195 @@ def set_working_directory_to_script_location():
 script_dir = set_working_directory_to_script_location()
 
 def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS2
     except Exception:
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
 
+stop_event = threading.Event()
 
-def run_query(channel_var:tk.StringVar,from_date:ctk.CTkEntry,to_date:ctk.CTkEntry,name_entry:ctk.CTkEntry):
-    # Create an S3 client
+def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, name_entry: ctk.CTkEntry):
     s3_client = boto3.client("s3")
-    # List all S3 buckets
     bucket_name = 'all-kowri-datalake'
     current_directory = os.getcwd()
     channel_name = channel_var.get()
 
-    start_date = datetime.strptime(from_date.get(),"%d-%m-%Y")
-    end_date = datetime.strptime(to_date.get(),"%d-%m-%Y")
+    start_date = datetime.strptime(from_date.get(), "%d-%m-%Y")
+    end_date = datetime.strptime(to_date.get(), "%d-%m-%Y")
     output_file_name = name_entry.get()
 
     current_date = start_date
     file_name_locs = {
-        "MTN-GH-Collections":"KB_MOMO_MTN_Collection",
-        "MTN-GH-Disbursements":"KB_MOMO_MTN_Disbursement",
-        "Vodafone-GH-Collections":"KB_MOMO_VODAFONE_Collection",
-        "Vodafone-GH-Disbursements":"KB_MOMO_VODAFONE_Disbursement",
-        "Card-GH-NGENIUS":"NGENIUS",
-        "Card-GH-GTMPGS":"KB_CARD_GT_Transactions",
-        "SecurePay-GH-Collections":"SecurePay_Collections",
-        "SecurePay-GH-Disbursements":"SecurePay_Disbursements",
-        "KBPlatform-MerchantOrder":"KBPlatform_merchantOrder",
-        "KBPlatform-Transaction":"KBPlatform_transaction",
+        "MTN-GH-Collections": "KB_MOMO_MTN_Collection",
+        "MTN-GH-Disbursements": "KB_MOMO_MTN_Disbursement",
+        "Vodafone-GH-Collections": "KB_MOMO_VODAFONE_Collection",
+        "Vodafone-GH-Disbursements": "KB_MOMO_VODAFONE_Disbursement",
+        "Card-GH-NGENIUS": "NGENIUS",
+        "Card-GH-GTMPGS": "KB_CARD_GT_Transactions",
+        "SecurePay-GH-Collections": "SecurePay_Collections",
+        "SecurePay-GH-Disbursements": "SecurePay_Disbursements",
+        "KBPlatform-MerchantOrder": "KBPlatform_merchantOrder",
+        "KBPlatform-Transaction": "KBPlatform_transaction",
     }
 
     complete_file_df = pd.DataFrame()
     while current_date <= end_date:
+        if stop_event.is_set():
+            print("Download stopped.")
+            break
+
         print("-------Gathering Data--------")
         current_year = str(current_date.year)
         current_month = str(current_date.month).zfill(2)
         current_day = str(current_date.day).zfill(2)
-        file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'  # The key of the file you want to download
+        file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
         print(file_key)
 
-        response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
         try:
-            complete_file_df = pd.concat([complete_file_df , pd.read_csv(response['Body'])])
+            response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+            complete_file_df = pd.concat([complete_file_df, pd.read_csv(response['Body'])])
         except:
-            complete_file_df = pd.concat([complete_file_df , pd.read_excel(response['Body'])])
+            complete_file_df = pd.concat([complete_file_df, pd.read_excel(response['Body'])])
         print(f"Day {current_day}: Done...")
-        current_date += timedelta(days=1) 
-    complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
+        current_date += timedelta(days=1)
 
-    folder_path = f"{current_directory}/data"
-    if platform.system() == "Windows":
-        os.startfile(folder_path)
-    elif platform.system() == "Darwin":  # macOS
-        subprocess.Popen(["open", folder_path])
-    else:  # Linux and other Unix-like OSes
-        subprocess.Popen(["xdg-open", folder_path])
-    
+    if not stop_event.is_set():
+        try:
+            complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
+        except Exception as e:
+            print(e)
+        folder_path = f"{current_directory}/data"
+        if platform.system() == "Windows":
+            os.startfile(folder_path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", folder_path])
+        else:
+            subprocess.Popen(["xdg-open", folder_path])
 
 def main():
-    def open_date_picker(date_entry: ctk.CTkEntry,root:ctk.CTk):
-        # Create a new top-level window for the date picker
+    def open_date_picker(date_entry: ctk.CTkEntry, root: ctk.CTk):
         date_window = Toplevel(root)
         date_window.title("Select Date")
         date_window.geometry("350x350")
-        
-        # Create and place the calendar in the window
-        cal = Calendar(date_window, selectmode="day", year=2024, month=11, day=6,date_pattern="dd-mm-yyyy")
+
+        cal = Calendar(date_window, selectmode="day", year=2024, month=11, day=6, date_pattern="dd-mm-yyyy")
         cal.pack(pady=20)
 
         def grab_date():
             selected_date = cal.get_date()
             date_entry.delete(0, ctk.END)
             date_entry.insert(0, selected_date)
-            date_window.destroy()  # Close the dialog after date selection
+            date_window.destroy()
 
-        # Add a button to confirm date selection
-        select_date_button = ctk.CTkButton(date_window, text="Select Date", command=grab_date,fg_color="green")
+        select_date_button = ctk.CTkButton(date_window, text="Select Date", command=grab_date, fg_color="green")
         select_date_button.pack(pady=10)
 
-
-    global month_var, year_var, file_frame
     root = ctk.CTk()
     root.title("DataQuery")
     root.option_add("*tearOff", False)
     root._set_appearance_mode("light")
     root.geometry("500x550")
 
-    
-
     main_frame = ctk.CTkFrame(root, fg_color="white")
     main_frame.pack(fill="both", expand=True)
 
     logo_img = ctk.CTkImage(
-    Image.open(resource_path(f"{script_dir}/assets/KowriLogo.png")),
-    size=(200, 70),
-)
-    
+        Image.open(resource_path(f"{script_dir}/assets/KowriLogo.png")),
+        size=(200, 70),
+    )
+
     label = ctk.CTkLabel(main_frame, image=logo_img, text="", fg_color="white")
     label.pack()
 
-    # Initialize Tkinter variables after creating root
-    channels = ["MTN-GH-Collections", "MTN-GH-Disbursements", "Vodafone-GH-Collections", "Vodafone-GH-Disbursements", "Card-GH-GTMPGS", "InstantPayment-GH", 
-              "Card-GH-NGENIUS", "SecurePay-GH-Collections", "SecurePay-GH-Disbursements","KBPlatform-MerchantOrder","KBPlatform-Transaction"]
+    channels = [
+        "MTN-GH-Collections", "MTN-GH-Disbursements", "Vodafone-GH-Collections", "Vodafone-GH-Disbursements", "Card-GH-GTMPGS", "InstantPayment-GH",
+        "Card-GH-NGENIUS", "SecurePay-GH-Collections", "SecurePay-GH-Disbursements", "KBPlatform-MerchantOrder", "KBPlatform-Transaction"
+    ]
     channel_var = tk.StringVar(value=channels[0])
 
-    # Channel dropdown
-    channel_label = ctk.CTkLabel(main_frame, text="Select Channel:",text_color="green")
+    channel_label = ctk.CTkLabel(main_frame, text="Select Channel:", text_color="green")
     channel_label.pack(pady=(20, 5))
-    channel_dropdown = ctk.CTkOptionMenu(main_frame, variable=channel_var, values=channels,fg_color="white",button_color="green",dropdown_fg_color="white",text_color="black",dropdown_text_color="black",dropdown_hover_color="green")
+    channel_dropdown = ctk.CTkOptionMenu(main_frame, variable=channel_var, values=channels, fg_color="white", button_color="green", dropdown_fg_color="white", text_color="black", dropdown_text_color="black", dropdown_hover_color="green")
     channel_dropdown.pack(pady=5)
 
-    # Date picker
-    dates_frame = ctk.CTkFrame(main_frame, fg_color="white",bg_color="white")
+    dates_frame = ctk.CTkFrame(main_frame, fg_color="white", bg_color="white")
     dates_frame.pack(pady=(20, 5))
 
-
     from_frame = ctk.CTkFrame(dates_frame, fg_color="white")
-    from_frame.grid(row=0,column=0)
-    from_label =  ctk.CTkLabel(from_frame, text="From:",text_color="green")
+    from_frame.grid(row=0, column=0)
+    from_label = ctk.CTkLabel(from_frame, text="From:", text_color="green")
     from_label.pack(pady=(20, 5))
 
-    from_entry = ctk.CTkEntry(from_frame, fg_color="white",bg_color="white",text_color="black")
-    from_entry.pack(pady=5,padx=20)
-    # Create a button to open the date picker
-    date_button = ctk.CTkButton(from_frame, text="Select Date", command=lambda: open_date_picker(from_entry,root),text_color="white",fg_color="green")
-    date_button.pack(pady=5)
+    from_entry = ctk.CTkEntry(from_frame, fg_color="white", bg_color="white", text_color="black")
+    from_entry.pack(pady=5, padx=20)
 
+    date_button = ctk.CTkButton(from_frame, text="Select Date", command=lambda: open_date_picker(from_entry, root), text_color="white", fg_color="green")
+    date_button.pack(pady=5)
 
     to_frame = ctk.CTkFrame(dates_frame, fg_color="white")
-    to_frame.grid(row=0,column=1)
-    to_label =  ctk.CTkLabel(to_frame, text="To:",text_color="green")
+    to_frame.grid(row=0, column=1)
+    to_label = ctk.CTkLabel(to_frame, text="To:", text_color="green")
     to_label.pack(pady=(20, 5))
 
-    to_entry = ctk.CTkEntry(to_frame, fg_color="white",bg_color="white",text_color="black")
+    to_entry = ctk.CTkEntry(to_frame, fg_color="white", bg_color="white", text_color="black")
     to_entry.pack(pady=5)
-    # Create a button to open the date picker
-    date_button = ctk.CTkButton(to_frame, text="Select Date", command=lambda: open_date_picker(to_entry,root),text_color="white",fg_color="green")
+
+    date_button = ctk.CTkButton(to_frame, text="Select Date", command=lambda: open_date_picker(to_entry, root), text_color="white", fg_color="green")
     date_button.pack(pady=5)
 
-    outName_entry = ctk.CTkEntry(main_frame, fg_color="white",bg_color="white",text_color="black",placeholder_text="Enter Output Name",width=300)
+    outName_entry = ctk.CTkEntry(main_frame, fg_color="white", bg_color="white", text_color="black", placeholder_text="Enter Output Name", width=300)
     outName_entry.pack(pady=5)
-
-    # Submit button
-    submit_button = ctk.CTkButton(main_frame, text="Run Query",command=lambda: threading.Thread(target=check_data_validity,args=(channel_var, from_entry, to_entry, submit_button,outName_entry)).start(),text_color="white",fg_color="green")
-    submit_button.pack(pady=(30, 10))
 
     status_label = ctk.CTkLabel(main_frame, text="", text_color="green")
     status_label.pack(pady=(20, 5))
 
-
-    style = ttk.Style(root)
-    # Import the tcl file
-    root.tk.call(
-        "source",
-        resource_path(f"{script_dir}\\assets\\Forest-ttk-theme-master\\forest-light.tcl"),
-    )
-
     def update_widgets(button: ctk.CTkButton, status):
         if status == "running":
-            button.configure(state="disabled", fg_color="grey")
+            button.configure(fg_color="red", text="Stop", hover_color="dark red")
             status_label.configure(text="Gathering Data...", text_color="green")
         elif status == "done":
-            button.configure(state="normal", fg_color="green")
+            button.configure(state="normal", fg_color="green", text="Run Query", hover_color="green")
             status_label.configure(text="Data Query Completed", text_color="green")
+        elif status == "stopped":
+            button.configure(state="normal", fg_color="green", text="Run Query", hover_color="green")
+            status_label.configure(text="Query Stopped", text_color="red")
 
-    def run_query_thread(channel_var, from_entry, to_entry, button,name_entry):
-        # Disable the button and update its color
+    def run_query_thread(channel_var, from_entry, to_entry, button, name_entry):
+        stop_event.clear()
         update_widgets(button, "running")
 
-        # Call your run_query function (the time-consuming operation)
-        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry,name_entry=name_entry)
+        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry, name_entry=name_entry)
 
-        # Once done, re-enable the button
-        update_widgets(button, "done")
+        if not stop_event.is_set():
+            update_widgets(button, "done")
 
-    def check_data_validity(channel_var,from_entry, to_entry,button,name_entry):
-        # Check if the date is valid
+    def stop_query(button):
+        stop_event.set()
+        update_widgets(button, "stopped")
+
+    def check_data_validity(channel_var, from_entry, to_entry, button, name_entry):
         if not from_entry.get() or not to_entry.get() or not name_entry.get():
             status_label.configure(text="Please fill in all fields", text_color="red")
             return
-        
-        try:
-            run_query_thread(channel_var, from_entry, to_entry, button,name_entry)
-        except:
-            status_label.configure(text="Error Occurred", text_color="red")
-            button.configure(state="normal", fg_color="green")
 
+        if button.cget("text") == "Stop":
+            stop_query(button)
+        else:
+            threading.Thread(target=run_query_thread, args=(channel_var, from_entry, to_entry, button, name_entry)).start()
 
+    submit_button = ctk.CTkButton(main_frame, text="Run Query", command=lambda: check_data_validity(channel_var, from_entry, to_entry, submit_button, outName_entry), text_color="white", fg_color="green")
+    submit_button.pack(pady=(30, 10))
 
+    style = ttk.Style(root)
+    root.tk.call(
+        "source",
+        resource_path(f"{script_dir}/assets/Forest-ttk-theme-master/forest-light.tcl"),
+    )
 
-
-
-    # Set the theme with the theme_use method
     style.theme_use("forest-light")
-
     root.mainloop()
 
 if __name__ == "__main__":
     main()
-
-
-
