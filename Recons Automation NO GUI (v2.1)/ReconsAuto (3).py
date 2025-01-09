@@ -8,6 +8,9 @@ from datetime import datetime
 from datetime import date
 from datetime import timedelta
 import os
+import sys
+
+sys.path.append("C:\\Users\\OMEN 16\\repos\\DreamOval_Projects\\AWS")
 
 tx_id_col_names = [
     "integratorTransId",
@@ -260,7 +263,7 @@ def get_write_double_int_val(
 
 
 def update_recons_sheet():
-    fwb = load_workbook("Reconciliations 2024.xlsx")
+    fwb = load_workbook("Reconciliations 2025.xlsx")
 
     if datetime.today().day == 1:
         today = date.today()
@@ -296,7 +299,7 @@ def update_recons_sheet():
         fsheet["N" + str(start_row)].value = abs(dup_values[row])
         start_row += 1
     fwb.close()
-    fwb.save("Reconciliations 2024.xlsx")
+    fwb.save("Reconciliations 2025.xlsx")
 
 
 def find_duplicates(int_df: pd.DataFrame):
@@ -1059,6 +1062,13 @@ if __name__ == "__main__":
 
 
 update_recons_sheet()
+
+import rename_for_upload
+import s3Upload_New_MTNUpgrade
+
+rename_for_upload.rename_and_move()
+s3Upload_New_MTNUpgrade.upload_to_s3()
+
     # run_recons(
     #     (
     #         check_for_file(f"Quipu{yesterday}.xlsx"),
