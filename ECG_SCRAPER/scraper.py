@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from datetime import datetime
 import time
 
@@ -36,37 +38,48 @@ email_input = driver.find_element(By.XPATH, "/html/body/main/div[2]/div/main/div
 email_input.send_keys(username)
 email_input.send_keys(Keys.ENTER)
 
+# WebDriverWait(driver, 20).until(EC.visibility_of((By.XPATH, "/html/body/main/div[2]/div/div/div/div[2]/div[1]/div/table")))
 time.sleep(20)
 
-# # Specify your target date (make sure it matches the format you want to compare)
-# target_date = "2025-01-14"  # Example: Compare only the date portion
+filter_date = "2025-01-14"
+filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d")
 
-# # Locate all rows in the table
-# rows = driver.find_elements(By.XPATH, "/html/body/main/div[2]/div/div/div/div[2]/div[1]/div/table")
+# Locate the table body
+table_body = driver.find_element(By.CSS_SELECTOR, ".table tbody")
 
-# # Iterate through each row to find the matching date
-# for row in rows:
-#     # Locate the date cell (adjust column index as per the table structure)
-#     date_cell = row.find_element(By.XPATH, ".//td[8]")  # Assuming the date is in the first column
-    
-#     # Get the date text
-#     date_text = date_cell.text.strip()  # Example: "Tue, Jan 14, 2025, 5:02 PM"
-    
-#     # Parse the date to a datetime object
-#     parsed_date = datetime.strptime(date_text, "%a, %b %d, %Y, %I:%M %p")  # Adjust format as needed
-    
-#     # Extract only the date portion for comparison
-#     if parsed_date.strftime("%Y-%m-%d") == target_date:
-#         # Print or process the entire row data
-#         cells = row.find_elements(By.TAG_NAME, "td")
-#         row_data = [cell.text.strip() for cell in cells]
-#         print(row_data)
+# Extract rows
+rows = table_body.find_elements(By.TAG_NAME, "tr")
 
-rows = driver.find_elements(By.XPATH, "/html/body/main/div[2]/div/div/div/div[2]/div[1]/div/table")
+# Initialize list to store table data
+table_data = []
+
+# Iterate over each row
 for row in rows:
+    # Extract cells in the row
     cells = row.find_elements(By.TAG_NAME, "td")
-    for cell in cells:
-        print(cell.text)
+
+    raw_date_text = cells[7].text.strip()
+    print("######################################################")
+    print(raw_date_text)
+    try:
+        row_date_obj = datetime.strptime(raw_date_text, "%a, %b %d, %Y, %I:%M %p")
+        print("Row date:", row_date_obj)
+        print("Filter date:", filter_date_obj)
+    except ValueError:
+        print("Invalid date format:", raw_date_text)
+        continue 
+
+    if row_date_obj.date() == filter_date_obj.date():
+        row_data = [cell.text.strip() for cell in cells]
+        table_data.append(row_data)
+    else:
+        print("Skipping row with date:", raw_date_text)
+        pass
+
+# Print extracted data
+for data in table_data:
+    print(data)
+
 
 time.sleep(300)
 
