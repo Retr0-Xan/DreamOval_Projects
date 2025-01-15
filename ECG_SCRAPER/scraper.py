@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from datetime import datetime
+import pandas as pd
 import time
 
 # Path to your existing Chrome profile
@@ -39,16 +40,25 @@ email_input.send_keys(username)
 email_input.send_keys(Keys.ENTER)
 
 # WebDriverWait(driver, 20).until(EC.visibility_of((By.XPATH, "/html/body/main/div[2]/div/div/div/div[2]/div[1]/div/table")))
-time.sleep(20)
+time.sleep(15)
 
 filter_date = "2025-01-14"
 filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d")
 
+table_head = driver.find_element(By.CSS_SELECTOR, ".table thead")
+table_heads = table_head.find_elements(By.TAG_NAME, "th")
+
+table_headers = [head.text for head in table_heads]
+
+
 # Locate the table body
 table_body = driver.find_element(By.CSS_SELECTOR, ".table tbody")
+# # Locate the table header
+# table_header = table_body.find_element(By.TAG_NAME, "thead")
 
 # Extract rows
 rows = table_body.find_elements(By.TAG_NAME, "tr")
+headers = table_body.find_elements(By.TAG_NAME, "th")
 
 # Initialize list to store table data
 table_data = []
@@ -59,8 +69,6 @@ for row in rows:
     cells = row.find_elements(By.TAG_NAME, "td")
 
     raw_date_text = cells[7].text.strip()
-    print("######################################################")
-    print(raw_date_text)
     try:
         row_date_obj = datetime.strptime(raw_date_text, "%a, %b %d, %Y, %I:%M %p")
         print("Row date:", row_date_obj)
@@ -75,11 +83,14 @@ for row in rows:
     else:
         print("Skipping row with date:", raw_date_text)
         pass
+    
+print(table_data)
 
-# Print extracted data
-for data in table_data:
-    print(data)
 
+try:
+    results_df = pd.DataFrame(data=table_data,columns=table_headers).to_excel("results.xlsx", index=False)
+except:
+    print("Error")
 
 time.sleep(300)
 
