@@ -59,65 +59,109 @@ table_body = driver.find_element(By.CSS_SELECTOR, ".table tbody")
 # # Locate the table header
 # table_header = table_body.find_element(By.TAG_NAME, "thead")
 
-# Extract rows
-rows = table_body.find_elements(By.TAG_NAME, "tr")
-headers = table_body.find_elements(By.TAG_NAME, "th")
+# # Extract rows
+# rows = table_body.find_elements(By.TAG_NAME, "tr")
+# headers = table_body.find_elements(By.TAG_NAME, "th")
 
 # Initialize list to store table data
 table_data = []
 trans_ids = []
 
+counter = 0
 # Iterate over each row
-while not date_found:
+
+
+for row_number in range(counter,15):
     # Re-fetch table body and rows on each loop
     table_body = driver.find_element(By.CSS_SELECTOR, ".table tbody")
     rows = table_body.find_elements(By.TAG_NAME, "tr")
-    counter = 0
+    current_row =  rows[row_number]
+    cells = current_row.find_elements(By.TAG_NAME, "td")
+    raw_date_text = cells[7].text.strip()
+    row_menu = cells[9]
 
-    for row in rows:
+    print("Row number:", row_number)
+    print("Counter:", counter)
+
+    try:
+        row_date_obj = datetime.strptime(raw_date_text, "%a, %b %d, %Y, %I:%M %p")
+        print("Row date:", row_date_obj)
+        print("Filter date:", filter_date_obj)
+    except ValueError:
+        print("Invalid date format:", raw_date_text)
         counter += 1
-        # Extract cells in the row
-        cells = row.find_elements(By.TAG_NAME, "td")
+        break
 
-        raw_date_text = cells[7].text.strip()
-        row_menu = cells[9]
+    if row_date_obj.date() == filter_date_obj.date():
+        # date_found = True
+        row_data = [cell.text.strip() for cell in cells]
+        table_data.append(row_data)
 
-        try:
-            row_date_obj = datetime.strptime(raw_date_text, "%a, %b %d, %Y, %I:%M %p")
-            print("Row date:", row_date_obj)
-            print("Filter date:", filter_date_obj)
-        except ValueError:
-            print("Invalid date format:", raw_date_text)
-            continue
+        # Click the menu and navigate to transaction details
+        row_menu.click()
+        print("Row number:", row_number)
+        print("Counter:", counter)
+        time.sleep(2)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR,f"body > main > div:nth-child(2) > div > div > div > div:nth-child(3) > div.table-responsive-parent > div > table > tbody > tr:nth-child({row_number+1}) > td.show > div > button"))).click()
+        
+        time.sleep(5)
+        # Get transaction ID from the URL
+        trans_id = driver.current_url.split("/")[-1]
+        trans_ids.append(trans_id)
 
-        if row_date_obj.date() == filter_date_obj.date():
-            date_found = True
-            row_data = [cell.text.strip() for cell in cells]
-            table_data.append(row_data)
+        # Navigate back to the original page
+        driver.back()
+        time.sleep(5)
+        counter += 1
+    else:
+        print("Skipping row with date:", raw_date_text)
+        counter += 1
 
-            # Click the menu and navigate to transaction details
-            row_menu.click()
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((
-                    By.CSS_SELECTOR,
-                    f"body > main > div:nth-child(2) > div > div > div > div:nth-child(3) > div.table-responsive-parent > div > table > tbody > tr:nth-child({counter}) > td.show > div > button"
-                ))
-            ).click()
-            time.sleep(5)
 
-            # Get transaction ID from the URL
-            trans_id = driver.current_url.split("/")[-1]
-            trans_ids.append(trans_id)
+    # for row in rows:
+    #     counter += 1
+    #     # Extract cells in the row
+    #     cells = row.find_elements(By.TAG_NAME, "td")
 
-            # Navigate back to the original page
-            driver.back()
-            time.sleep(5)
+    #     raw_date_text = cells[7].text.strip()
+    #     row_menu = cells[9]
 
-            # Break the inner loop and restart row processing after navigating back
-            break
+    #     try:
+    #         row_date_obj = datetime.strptime(raw_date_text, "%a, %b %d, %Y, %I:%M %p")
+    #         print("Row date:", row_date_obj)
+    #         print("Filter date:", filter_date_obj)
+    #     except ValueError:
+    #         print("Invalid date format:", raw_date_text)
+    #         continue
 
-        else:
-            print("Skipping row with date:", raw_date_text)
+    #     if row_date_obj.date() == filter_date_obj.date():
+    #         date_found = True
+    #         row_data = [cell.text.strip() for cell in cells]
+    #         table_data.append(row_data)
+
+    #         # Click the menu and navigate to transaction details
+    #         row_menu.click()
+    #         WebDriverWait(driver, 5).until(
+    #             EC.element_to_be_clickable((
+    #                 By.CSS_SELECTOR,
+    #                 f"body > main > div:nth-child(2) > div > div > div > div:nth-child(3) > div.table-responsive-parent > div > table > tbody > tr:nth-child({counter}) > td.show > div > button"
+    #             ))
+    #         ).click()
+    #         time.sleep(5)
+
+    #         # Get transaction ID from the URL
+    #         trans_id = driver.current_url.split("/")[-1]
+    #         trans_ids.append(trans_id)
+
+    #         # Navigate back to the original page
+    #         driver.back()
+    #         time.sleep(5)
+
+    #         # Break the inner loop and restart row processing after navigating back
+    #         break
+
+    #     else:
+    #         print("Skipping row with date:", raw_date_text)
 
     # WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "body > main > div:nth-child(2) > div > div > div > div:nth-child(3) > div.mt-5.mb-4.d-md-flex.justify-content-between.align-items-center.px-4 > nav > ul > li:nth-child(8) > span"))).click()
       
