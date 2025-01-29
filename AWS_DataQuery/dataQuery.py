@@ -12,6 +12,67 @@ import platform
 import threading
 from datetime import datetime, timedelta
 import subprocess
+from tkinter import messagebox
+
+
+
+def validate_credentials(access_key, secret_key):
+    try:
+        # Create a session with the credentials
+        session = boto3.Session(
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key
+        )
+        # Use S3 client to validate the credentials
+        s3 = session.client('s3')
+        s3.list_buckets()  # Try listing buckets to test the credentials
+        return session  # Return the session if valid
+    except Exception as e:
+        print(e)
+        return None
+    
+
+def login_screen():
+    def login():
+        access_key = access_key_entry.get()
+        secret_key = secret_key_entry.get()
+        
+        if not access_key or not secret_key:
+            messagebox.showerror("Error", "Please enter both Access Key and Secret Key")
+            return
+        
+        global aws_session
+        aws_session = validate_credentials(access_key, secret_key)
+        
+        if aws_session:
+            messagebox.showinfo("Success", "Login successful!")
+            login_window.destroy()  # Close login screen
+            main()
+            
+        else:
+            messagebox.showerror("Error", "Invalid AWS Credentials")
+
+    # Create login window
+    login_window = ctk.CTk()
+    login_window.title("AWS Login")
+    login_window.geometry("400x300")
+
+    # Access Key Input
+    ctk.CTkLabel(login_window, text="AWS Access Key:").pack(pady=10)
+    access_key_entry = ctk.CTkEntry(login_window)
+    access_key_entry.pack(pady=10)
+
+    # Secret Key Input
+    ctk.CTkLabel(login_window, text="AWS Secret Key:").pack(pady=10)
+    secret_key_entry = ctk.CTkEntry(login_window, show="*")
+    secret_key_entry.pack(pady=10)
+
+    # Login Button
+    ctk.CTkButton(login_window, text="Login", command=login).pack(pady=20)
+
+    login_window.mainloop()
+
+
 
 def set_working_directory_to_script_location():
     if getattr(sys, "frozen", False):
@@ -35,7 +96,10 @@ def resource_path(relative_path):
 stop_event = threading.Event()
 
 def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, name_entry: ctk.CTkEntry):
-    s3_client = boto3.client("s3")
+    # s3_client = boto3.client("s3")
+    s3_client = aws_session.client("s3")
+
+    unavailable_files = []
     bucket_name = 'all-kowri-datalake'
     current_directory = os.getcwd()
     channel_name = channel_var.get()
@@ -69,15 +133,24 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
         current_month = str(current_date.month).zfill(2)
         current_day = str(current_date.day).zfill(2)
         file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
+        file_name = f'{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
         print(file_key)
 
         try:
             response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             complete_file_df = pd.concat([complete_file_df, pd.read_csv(response['Body'])])
+            print(f"Day {current_day}: Done...")
         except:
-            complete_file_df = pd.concat([complete_file_df, pd.read_excel(response['Body'])])
-        print(f"Day {current_day}: Done...")
+            try:
+                complete_file_df = pd.concat([complete_file_df, pd.read_excel(response['Body'])])
+                print(f"Day {current_day}: Done...")
+            except:
+                unavailable_files.append(file_name)
+                print(f"Day {current_day}: Skipping...")
         current_date += timedelta(days=1)
+
+        print(f'Unavailable Files: {unavailable_files}')
+
 
     if not stop_event.is_set():
         try:
@@ -216,4 +289,6 @@ def main():
     root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    aws_session = None
+    login_screen()
+    # main()
