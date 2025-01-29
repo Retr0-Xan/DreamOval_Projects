@@ -95,7 +95,7 @@ def resource_path(relative_path):
 
 stop_event = threading.Event()
 
-def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, name_entry: ctk.CTkEntry):
+def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, name_entry: ctk.CTkEntry,update_widgets,button):
     # s3_client = boto3.client("s3")
     s3_client = aws_session.client("s3")
 
@@ -149,21 +149,26 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
                 print(f"Day {current_day}: Skipping...")
         current_date += timedelta(days=1)
 
-        print(f'Unavailable Files: {unavailable_files}')
+    print(f'Unavailable Files: {unavailable_files}')
+    user_response = messagebox.askokcancel(title="DataQuery", message=f"The following files could not be downloaded. Do you wish to proceed? \n{unavailable_files}", icon="info")
 
-
-    if not stop_event.is_set():
-        try:
-            complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
-        except Exception as e:
-            print(e)
-        folder_path = f"{current_directory}/data"
-        if platform.system() == "Windows":
-            os.startfile(folder_path)
-        elif platform.system() == "Darwin":
-            subprocess.Popen(["open", folder_path])
-        else:
-            subprocess.Popen(["xdg-open", folder_path])
+    if not user_response:
+            stop_event.set()
+            update_widgets(button, "stopped")
+            
+    else:
+        if not stop_event.is_set():
+            try:
+                complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
+            except Exception as e:
+                print(e)
+            folder_path = f"{current_directory}/data"
+            if platform.system() == "Windows":
+                os.startfile(folder_path)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", folder_path])
+            else:
+                subprocess.Popen(["xdg-open", folder_path])
 
 def main():
     def open_date_picker(date_entry: ctk.CTkEntry, root: ctk.CTk):
@@ -253,11 +258,11 @@ def main():
             button.configure(state="normal", fg_color="green", text="Run Query", hover_color="green")
             status_label.configure(text="Query Stopped", text_color="red")
 
-    def run_query_thread(channel_var, from_entry, to_entry, button, name_entry):
+    def run_query_thread(channel_var, from_entry, to_entry, button, name_entry,update_widgets=update_widgets):
         stop_event.clear()
         update_widgets(button, "running")
 
-        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry, name_entry=name_entry)
+        run_query(channel_var=channel_var, from_date=from_entry, to_date=to_entry, name_entry=name_entry,update_widgets=update_widgets,button=button)
 
         if not stop_event.is_set():
             update_widgets(button, "done")
