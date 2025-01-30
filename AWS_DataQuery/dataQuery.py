@@ -56,6 +56,7 @@ def login_screen():
     login_window = ctk.CTk()
     login_window.title("AWS Login")
     login_window.geometry("400x300")
+    login_window.iconbitmap((resource_path(f"{script_dir}\\assets\\kowri-icon.ico")))
 
     # Access Key Input
     ctk.CTkLabel(login_window, text="AWS Access Key:").pack(pady=10)
@@ -159,10 +160,10 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
     else:
         if not stop_event.is_set():
             try:
-                complete_file_df.to_csv(f"{current_directory}/data/{output_file_name}.csv", index=False)
+                complete_file_df.to_csv(resource_path(f"{current_directory}\\data\\{output_file_name}.csv"), index=False)
             except Exception as e:
                 print(e)
-            folder_path = f"{current_directory}/data"
+            folder_path = resource_path(f"{current_directory}\\data")
             if platform.system() == "Windows":
                 os.startfile(folder_path)
             elif platform.system() == "Darwin":
@@ -176,7 +177,8 @@ def main():
         date_window.title("Select Date")
         date_window.geometry("350x350")
 
-        cal = Calendar(date_window, selectmode="day", year=2024, month=11, day=6, date_pattern="dd-mm-yyyy")
+
+        cal = Calendar(date_window, selectmode="day", year=datetime.now().year, month=datetime.now().month, day=datetime.now().day, date_pattern="dd-mm-yyyy")
         cal.pack(pady=20)
 
         def grab_date():
@@ -190,6 +192,7 @@ def main():
 
     root = ctk.CTk()
     root.title("DataQuery")
+    root.iconbitmap((resource_path(f"{script_dir}\\assets\\kowri-icon.ico")))
     root.option_add("*tearOff", False)
     root._set_appearance_mode("light")
     root.geometry("500x550")
@@ -198,7 +201,7 @@ def main():
     main_frame.pack(fill="both", expand=True)
 
     logo_img = ctk.CTkImage(
-        Image.open(resource_path(f"{script_dir}/assets/KowriLogo.png")),
+        Image.open(resource_path(f"{script_dir}\\assets\\KowriLogo.png")),
         size=(200, 70),
     )
 
@@ -287,7 +290,7 @@ def main():
     style = ttk.Style(root)
     root.tk.call(
         "source",
-        resource_path(f"{script_dir}/assets/Forest-ttk-theme-master/forest-light.tcl"),
+        resource_path(f"{script_dir}\\assets\\Forest-ttk-theme-master\\forest-light.tcl"),
     )
 
     style.theme_use("forest-light")
