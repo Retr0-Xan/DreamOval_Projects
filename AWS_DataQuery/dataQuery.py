@@ -151,25 +151,41 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
         current_date += timedelta(days=1)
 
     print(f'Unavailable Files: {unavailable_files}')
-    user_response = messagebox.askokcancel(title="DataQuery", message=f"The following files could not be downloaded. Do you wish to proceed? \n{unavailable_files}", icon="info")
+    
+    if unavailable_files != []:
+        user_response = messagebox.askokcancel(title="DataQuery", message="The following files could not be downloaded:\n" + "\n".join(unavailable_files) + "\nDo you wish to proceed?", icon="info")
 
-    if not user_response:
-            stop_event.set()
-            update_widgets(button, "stopped")
+        if not user_response:
+                stop_event.set()
+                update_widgets(button, "stopped")
             
+        else:
+            if not stop_event.is_set():
+                try:
+                    complete_file_df.to_csv(resource_path(f"{current_directory}\\data\\{output_file_name}.csv"), index=False)
+                except Exception as e:
+                    print(e)
+                folder_path = resource_path(f"{current_directory}\\data")
+                if platform.system() == "Windows":
+                    os.startfile(folder_path)
+                elif platform.system() == "Darwin":
+                    subprocess.Popen(["open", folder_path])
+                else:
+                    subprocess.Popen(["xdg-open", folder_path])
     else:
         if not stop_event.is_set():
-            try:
-                complete_file_df.to_csv(resource_path(f"{current_directory}\\data\\{output_file_name}.csv"), index=False)
-            except Exception as e:
-                print(e)
-            folder_path = resource_path(f"{current_directory}\\data")
-            if platform.system() == "Windows":
-                os.startfile(folder_path)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(["open", folder_path])
-            else:
-                subprocess.Popen(["xdg-open", folder_path])
+                try:
+                    complete_file_df.to_csv(resource_path(f"{current_directory}\\data\\{output_file_name}.csv"), index=False)
+                except Exception as e:
+                    print(e)
+                folder_path = resource_path(f"{current_directory}\\data")
+                if platform.system() == "Windows":
+                    os.startfile(folder_path)
+                elif platform.system() == "Darwin":
+                    subprocess.Popen(["open", folder_path])
+                else:
+                    subprocess.Popen(["xdg-open", folder_path])
+
 
 def main():
     def open_date_picker(date_entry: ctk.CTkEntry, root: ctk.CTk):
