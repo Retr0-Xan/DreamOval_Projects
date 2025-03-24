@@ -200,6 +200,14 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
     for item in treeview.get_children():
         treeview.delete(item)
     
+    # Clear existing columns
+    for col in treeview["columns"]:
+        treeview.heading(col, text='')
+    
+    # Reset the columns
+    treeview["columns"] = ()
+    treeview.column("#0", width=0, stretch=tk.YES)
+    
     file_name_locs = {
         "MTN-GH-Collections": "KB_MOMO_MTN_Collection",
         "MTN-GH-Disbursements": "KB_MOMO_MTN_Disbursement",
@@ -237,25 +245,24 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
             
             if not result_df.empty:
                 found = True
-                # Configure the treeview columns if not already done
-                if not treeview["columns"]:
-                    # Get all columns from the dataframe
-                    all_columns = list(result_df.columns)
-                    
-                    # Filter to only include columns that are in display_columns
-                    filtered_columns = [col for col in all_columns if col in display_columns]
-                        # If no columns match, fall back to all columns
-                    if not filtered_columns:
-                        filtered_columns = all_columns
-                    
-                    # Set the filtered columns to the treeview
-                    treeview["columns"] = filtered_columns
-                    
-                    # Configure column display
-                    treeview.column("#0", width=0, stretch=tk.YES)
-                    for col in filtered_columns:
-                        treeview.column(col, anchor=tk.W, width=100, stretch=tk.YES)
-                        treeview.heading(col, text=col, anchor=tk.W)
+                # Get all columns from the dataframe
+                all_columns = list(result_df.columns)
+                
+                # Filter to only include columns that are in display_columns
+                filtered_columns = [col for col in all_columns if col in display_columns]
+                
+                # If no columns match, fall back to all columns
+                if not filtered_columns:
+                    filtered_columns = all_columns
+                
+                # Set the filtered columns to the treeview
+                treeview["columns"] = filtered_columns
+                
+                # Configure column display
+                treeview.column("#0", width=0, stretch=tk.YES)
+                for col in filtered_columns:
+                    treeview.column(col, anchor=tk.W, width=100, stretch=tk.YES)
+                    treeview.heading(col, text=col, anchor=tk.W)
                 
                 # Add data to treeview
                 for idx, row in result_df.iterrows():
