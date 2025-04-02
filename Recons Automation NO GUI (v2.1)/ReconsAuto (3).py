@@ -12,6 +12,7 @@ import sys
 
 sys.path.append("C:\\Users\\OMEN 16\\repos\\DreamOval_Projects\\AWS")
 
+
 tx_id_col_names = [
     "integratorTransId",
     "IntegratorTransId",
@@ -28,6 +29,10 @@ tx_id_col_names = [
     "Order ID",
     "Integrator Trans ID",
     "REFERENCE_NUMBER",
+    "Receipt. No",
+    "Bill Er Trans ID",
+    "Acquirer Transaction ID"
+
 ]
 amount_col_names = [
     "Amount",
@@ -290,13 +295,11 @@ def update_recons_sheet():
             start_row = row
             break
     print(f" start row = {start_row}")
-    for row in range(0, 17):
-        fsheet["E" + str(start_row)].value = ova_volumes[row]
-        fsheet["F" + str(start_row)].value = abs(ova_values[row])
-        fsheet["G" + str(start_row)].value = int_volumes[row]
-        fsheet["H" + str(start_row)].value = abs(int_values[row])
-        fsheet["M" + str(start_row)].value = dup_volumes[row]
-        fsheet["N" + str(start_row)].value = abs(dup_values[row])
+    for row in range(0, 13):
+        fsheet["C" + str(start_row)].value = ova_volumes[row]
+        fsheet["D" + str(start_row)].value = abs(ova_values[row])
+        fsheet["E" + str(start_row)].value = int_volumes[row]
+        fsheet["F" + str(start_row)].value = abs(int_values[row])
         start_row += 1
     fwb.close()
     fwb.save("Reconciliations 2025.xlsx")
@@ -435,7 +438,10 @@ def run_recons(
     ova_status_flag: str or None = None,
     ova_status_col: str or None = None,
     list_index: int,
+    collOrDisb: str or None = None,
+    amount_col_name: str or None = None,
 ):
+
     if file_names[0] is None and file_names[1] is None:
         return
     service_name_header = ""
@@ -468,32 +474,60 @@ def run_recons(
             ova_file_df = ova_file_df.loc[
                 ova_file_df[ova_status_col] == ova_status_flag
             ]
+        if amount_col_name is None:
+            amount_col = ""
+            for name in amount_col_names:
+                if name in ova_file_df.columns:
+                    if not ova_file_df[name].isna().all():
+                        amount_col = name
+                        break  # check which of the formats the amount column is written in
+        else:
+                        amount_col = amount_col_name
+
+        collOrDisb_marker = {
+            "coll": ova_file_df.loc[ova_file_df[amount_col] > 0],
+            "disb": ova_file_df.loc[ova_file_df[amount_col] < 0],
+        }
+
+        rev_top_marker = {
+            "coll": ova_file_df.loc[ova_file_df[amount_col] < 0],
+            "disb": ova_file_df.loc[ova_file_df[amount_col] > 0],
+        }
+
+        rev_top_string = {
+            "coll": "Liquidation_Reversals",
+            "disb": "Top Ups_Reversals",
+        }
 
         for name in creditDebit_headers:
             if name in ova_file_df.columns:
                 ova_file_df = ova_file_df[ova_file_df[name] == "C"]
                 break
+        ova_file_df = collOrDisb_marker[collOrDisb]
         ova_volume = len(ova_file_df)
         ova_volumes[list_index] = ova_volume
         print(
             f"{file_output_name}_OVA_Volume: {ova_volume}"
         )  # file_output_name is the name that shows for each channel as the script runs
-        amount_col = ""
-        for name in amount_col_names:
-            if name in ova_file_df.columns:
-                if not ova_file_df[name].isna().all():
-                    amount_col = name
-                    break  # check which of the formats the amount column is written in
 
-        ova_value = ova_file_df[amount_col].abs().sum()
+
+        ova_value = ova_file_df[amount_col].sum()
         ova_values[list_index] = ova_value
         print(f"{file_output_name} OVA_VALUE : {ova_value}")
+
         with pd.ExcelWriter(
             recons_file, engine="openpyxl", mode="w"
         ) as writer:  # specify new file name to write to
             ova_file_df.to_excel(
                 writer, sheet_name="Sheet1", index=False
             )  # save original data into first sheet of new file
+
+        with pd.ExcelWriter(
+            recons_file, engine="openpyxl", mode="a"
+        ) as writer:
+            rev_top_marker[collOrDisb].to_excel(
+                writer, sheet_name=rev_top_string[collOrDisb], index=False
+            )
 
     # ----------------------- INTEGRATOR/ DUPLICATES --------------------
     if int_file_name is not None:
@@ -551,8 +585,6 @@ def run_recons(
         dup, dup_val = find_duplicates(int_file_df)
         print(f"Number of duplicates: {len(dup)}")
         print(f"Duplicates value: {dup_val}")
-        dup_volumes[list_index] = len(dup)
-        dup_values[list_index] = dup_val
 
         write_duplicate_data(
             amount_col_name=amount_col, df=dup, value=dup_val, file_name=recons_file
@@ -745,12 +777,10 @@ if __name__ == "__main__":
 
     GIPdate = get_date(date=date_ + timedelta(1), format="gip")
     print(GIPdate)
-    ova_volumes = [0] * 17
-    ova_values = [0] * 17
-    int_volumes = [0] * 17
-    int_values = [0] * 17
-    dup_volumes = [0] * 17
-    dup_values = [0.00] * 17
+    ova_volumes = [0] * 13
+    ova_values = [0] * 13
+    int_volumes = [0] * 13
+    int_values = [0] * 13
     list_index = 0
     # run_recons(
     #     (
@@ -769,24 +799,25 @@ if __name__ == "__main__":
     #   
     #   
     # )
-    run_recons(
-        (
-            check_for_file(f"Ngenius KB{yesterday}.xlsx"),
-            check_for_file(f"Ngenius KB mBase{yesterday}.xlsx"),
-        ),
-        num_lines_of_header=(0, 0),
-        alt_recons_name=f"Ngenius KB{yesterday}",
-        file_output_name="Ngenius KB",
-        ova_status_flag="SUCCESS",
-        ova_status_col="Payment Status",
-        list_index=1,
-        ova_id="Merchant Defined Order Number",
-        int_id="IntegratorTransId",
-        alt_int_id="ID",
-        alt_ova_id="System Generated Order",
+    # run_recons(
+    #     (
+    #         check_for_file(f"Ngenius KB{yesterday}.xlsx"),
+    #         check_for_file(f"Ngenius KB mBase{yesterday}.xlsx"),
+    #     ),
+    #     num_lines_of_header=(0, 0),
+    #     alt_recons_name=f"Ngenius KB{yesterday}",
+    #     file_output_name="Ngenius KB",
+    #     ova_status_flag="SUCCESS",
+    #     ova_status_col="Payment Status",
+    #     list_index=1,
+    #     ova_id="Merchant Defined Order Number",
+    #     int_id="IntegratorTransId",
+    #     alt_int_id="ID",
+    #     alt_ova_id="System Generated Order",
+    #     collOrDisb="coll"
 
 
-    )
+    # )
     run_recons(
         (
             check_for_file(f"Ngenius KC{yesterday}.xlsx"),
@@ -802,6 +833,7 @@ if __name__ == "__main__":
         int_id="Universal Transaction Reference",
         alt_int_id="ID",
         alt_ova_id="System Generated Order",
+        collOrDisb="coll"
 
 
     )
@@ -819,6 +851,7 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Id",
+            collOrDisb="disb",
     
     
         )
@@ -840,6 +873,7 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_int_id="BillerTransId",
             alt_ova_id="Id",
+            collOrDisb="disb",
     
     
         )
@@ -857,6 +891,7 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_ova_id="Id",
             alt_int_id="Bill Er Trans ID",
+            collOrDisb="coll",
         )
     except:
         ova_volumes[list_index] = 0
@@ -876,6 +911,7 @@ if __name__ == "__main__":
             int_id="IntegratorTransId",
             alt_ova_id="Id",
             alt_int_id="BillerTransId",
+            collOrDisb="coll",
     
     
         )
@@ -928,6 +964,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
+            collOrDisb="coll",
+            amount_col_name="Paid In"
     
     
         )
@@ -950,7 +988,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
-    
+            collOrDisb="coll",
+            amount_col_name="Paid In"   
     
         )
 
@@ -969,7 +1008,8 @@ if __name__ == "__main__":
             int_id="Integrator Trans ID",
             alt_int_id="Bill Er Trans ID",
             alt_ova_id="Receipt No.",
-    
+            collOrDisb="disb",
+            amount_col_name="Withdrawn"   
     
         )
     except:
@@ -991,7 +1031,8 @@ if __name__ == "__main__":
             int_id="Transaction Id",
             alt_int_id="Receipt No",
             alt_ova_id="Receipt No.",
-    
+            collOrDisb="disb",
+            amount_col_name="Withdrawn"     
     
         )
 
@@ -1010,6 +1051,7 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
+        collOrDisb="coll",
 
 
     )
@@ -1028,8 +1070,7 @@ if __name__ == "__main__":
         int_id="IntegratorTransId",
         alt_int_id="BillerTransId",
         alt_ova_id="Id",
-
-
+        collOrDisb="disb",
     )
     
     run_recons(
@@ -1045,6 +1086,7 @@ if __name__ == "__main__":
         alt_recons_name=f"GIP_{yesterday}",
         alt_ova_id="REFERENCE_NUMBER",
         alt_int_id="IntegratorTransId",
+        collOrDisb="coll"
 
 
     )
@@ -1060,14 +1102,48 @@ if __name__ == "__main__":
     #     int_file=check_for_file(f"GIP Metabase{yesterday}.xlsx"),
     # )
 
+    try:
+        run_recons(
+            (
+                check_for_file(f"MPGS{yesterday}.xlsx"),
+                check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+            ),
+            num_lines_of_header=(0, 0),
+            alt_recons_name=f"MPGS{yesterday}",
+            file_output_name="MPGS",
+            mb_status_flag="CONFIRMED",
+            alt_int_id="BillerTransId",
+            alt_ova_id="Acquirer Transaction ID",
+            list_index=12,
+            ova_id="Acquirer Transaction ID",
+            int_id="BillerTransId",
+            collOrDisb="coll"
+        )
+    except:
+        run_recons(
+            (
+                check_for_file(f"MPGS{yesterday}.xlsx"),
+                check_for_file(f"MPGS_trn{yesterday}.xlsx"),
+            ),
+            num_lines_of_header=(0, 0),
+            alt_recons_name=f"MPGS{yesterday}",
+            file_output_name="MPGS",
+            mb_status_flag="CONFIRMED",
+            alt_int_id="Bill Er Trans ID",
+            alt_ova_id="Acquirer Transaction ID",
+            list_index=12,
+            ova_id="Acquirer Transaction ID",
+            int_id="Bill Er Trans ID",
+            collOrDisb="coll"
+        )
 
 update_recons_sheet()
 
-import rename_for_upload
-import s3Upload_New_MTNUpgrade
+# import rename_for_upload
+# import s3Upload_New_MTNUpgrade
 
-rename_for_upload.rename_and_move()
-s3Upload_New_MTNUpgrade.upload_to_s3()
+# rename_for_upload.rename_and_move()
+# s3Upload_New_MTNUpgrade.upload_to_s3()
 
     # run_recons(
     #     (
@@ -1100,38 +1176,6 @@ s3Upload_New_MTNUpgrade.upload_to_s3()
     #     alt_ova_id="Transaction ID",
     # )
 
-    # try:
-    #     run_recons(
-    #         (
-    #             check_for_file(f"MPGS{yesterday}.xlsx"),
-    #             check_for_file(f"MPGS_trn{yesterday}.xlsx"),
-    #         ),
-    #         num_lines_of_header=(0, 0),
-    #         alt_recons_name=f"MPGS{yesterday}",
-    #         file_output_name="MPGS",
-    #         mb_status_flag="CONFIRMED",
-    #         alt_int_id="BillerTransId",
-    #         alt_ova_id="Acquirer Transaction ID",
-    #         list_index=0,
-    #         ova_id="Acquirer Transaction ID",
-    #         int_id="BillerTransId",
-    #     )
-    # except:
-    #     run_recons(
-    #         (
-    #             check_for_file(f"MPGS{yesterday}.xlsx"),
-    #             check_for_file(f"MPGS_trn{yesterday}.xlsx"),
-    #         ),
-    #         num_lines_of_header=(0, 0),
-    #         alt_recons_name=f"MPGS{yesterday}",
-    #         file_output_name="MPGS",
-    #         mb_status_flag="CONFIRMED",
-    #         alt_int_id="Bill Er Trans ID",
-    #         alt_ova_id="Acquirer Transaction ID",
-    #         list_index=0,
-    #         ova_id="Acquirer Transaction ID",
-    #         int_id="Bill Er Trans ID",
-    #     )
     
     # run_recons(
     #     (
