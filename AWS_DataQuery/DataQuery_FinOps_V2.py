@@ -13,6 +13,7 @@ import threading
 from datetime import datetime, timedelta
 import subprocess
 from tkinter import messagebox
+import re
 
 display_columns = [
     "integratorTransId",
@@ -24,7 +25,7 @@ display_columns = [
     "BillerTransId",
     "Id",
     "External id"
-    "External Payment Request â†’ Institution Trans ID",
+    "External Payment Request â†' Institution Trans ID",
     "Merchant Transaction Reference",
     "REMARKS2",
     "External Payment Request → Institution Trans ID",
@@ -88,14 +89,20 @@ def resource_path(relative_path):
 
 stop_event = threading.Event()
 
+channel_path = ""
 def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, name_entry: ctk.CTkEntry, update_widgets, button):
     # s3_client = boto3.client("s3")
     s3_client = boto3.client("s3")
+    global channel_path
 
     unavailable_files = []
     bucket_name = 'all-kowri-datalake'
     current_directory = os.getcwd()
     channel_name = channel_var.get()
+    if channel_name == "SecurePay-GH-Collections":
+        channel_path = "KowriPartner"
+    else:
+        channel_path = "KowriBusiness"
 
     start_date = datetime.strptime(from_date.get(), "%d-%m-%Y")
     end_date = datetime.strptime(to_date.get(), "%d-%m-%Y")
@@ -113,6 +120,7 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
         "SecurePay-GH-Disbursements": "SecurePay_Disbursements",
         "KBPlatform-MerchantOrder": "KBPlatform_merchantOrder",
         "KBPlatform-Transaction": "KBPlatform_transaction",
+        "InstantPayment-GH":"InstantPayment-GH",
     }
 
     complete_file_df = pd.DataFrame()
@@ -125,7 +133,7 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
         current_year = str(current_date.year)
         current_month = str(current_date.month).zfill(2)
         current_day = str(current_date.day).zfill(2)
-        file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
+        file_key = f'{channel_path}/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
         file_name = f'{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
         print(file_key)
 
@@ -178,23 +186,40 @@ def run_query(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.C
                 else:
                     subprocess.Popen(["xdg-open", folder_path])
 
+# Global variable to store search results
+search_results_df = pd.DataFrame()
+
 def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_date: ctk.CTkEntry, 
-                      transaction_id: ctk.CTkEntry, status_label: ctk.CTkLabel, treeview: ttk.Treeview):
+                      transaction_ids: ctk.CTkEntry, status_label: ctk.CTkLabel, treeview: ttk.Treeview,
+                      download_button: ctk.CTkButton):
     s3_client = boto3.client("s3")
+    global channel_path
+    global search_results_df
     
     unavailable_files = []
     bucket_name = 'all-kowri-datalake'
     channel_name = channel_var.get()
-    transaction_id_value = transaction_id.get().strip()
-    
-    if not transaction_id_value:
-        status_label.configure(text="Please enter a transaction ID", text_color="red")
+    transaction_ids_value = [id.strip() for id in transaction_ids.get().split(',')]
+
+    channel_name = channel_var.get()
+    if channel_name == "SecurePay-GH-Collections":
+        channel_path = "KowriPartner"
+    else:
+        channel_path = "KowriBusiness"
+
+    # Remove any empty strings
+    transaction_ids_value = [id for id in transaction_ids_value if id]
+
+    if not transaction_ids_value:
+        status_label.configure(text="Please enter at least one transaction ID", text_color="red")
+        # Disable download button since no results
+        download_button.configure(state="disabled")
         return
     
     start_date = datetime.strptime(from_date.get(), "%d-%m-%Y")
     end_date = datetime.strptime(to_date.get(), "%d-%m-%Y")
     
-    status_label.configure(text="Searching for transaction...", text_color="green")
+    status_label.configure(text=f"Searching for {len(transaction_ids_value)} transaction(s)...", text_color="green")
     
     # Clear previous results
     for item in treeview.get_children():
@@ -206,7 +231,7 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
     
     # Reset the columns
     treeview["columns"] = ()
-    treeview.column("#0", width=0, stretch=tk.YES)
+    treeview.column("#0", width=0, stretch=tk.NO)
     
     file_name_locs = {
         "MTN-GH-Collections": "KB_MOMO_MTN_Collection",
@@ -219,9 +244,10 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
         "SecurePay-GH-Disbursements": "SecurePay_Disbursements",
         "KBPlatform-MerchantOrder": "KBPlatform_merchantOrder",
         "KBPlatform-Transaction": "KBPlatform_transaction",
+        "InstantPayment-GH":"InstantPayment-GH",
     }
     
-    found = False
+    found_transactions = []
     current_date = start_date
     
     while current_date <= end_date:
@@ -233,45 +259,28 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
         current_year = str(current_date.year)
         current_month = str(current_date.month).zfill(2)
         current_day = str(current_date.day).zfill(2)
-        file_key = f'KowriBusiness/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
+        file_key = f'{channel_path}/{channel_name}/year={current_year}/month={current_month}/day={current_day}/{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
         file_name = f'{file_name_locs[channel_name]}_{current_year}_{current_month}_{current_day}.csv'
+        print(file_key)
+        print(file_name)
         
         try:
             response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             df = pd.read_csv(response['Body'])
             
-            # Search for transaction ID in all columns (case insensitive)
-            result_df = df[df.astype(str).apply(lambda x: x.str.contains(transaction_id_value, case=False)).any(axis=1)]
+            # Search for transaction IDs in all columns (case insensitive)
+            # Create a mask to find rows containing any of the transaction IDs
+            id_mask = df.astype(str).apply(
+                lambda col: col.str.contains('|'.join(map(re.escape, transaction_ids_value)), case=False)
+            ).any(axis=1)
+            
+            result_df = df[id_mask]
             
             if not result_df.empty:
-                found = True
-                # Get all columns from the dataframe
-                all_columns = list(result_df.columns)
-                
-                # Filter to only include columns that are in display_columns
-                filtered_columns = [col for col in all_columns if col in display_columns]
-                
-                # If no columns match, fall back to all columns
-                if not filtered_columns:
-                    filtered_columns = all_columns
-                
-                # Set the filtered columns to the treeview
-                treeview["columns"] = filtered_columns
-                
-                # Configure column display
-                treeview.column("#0", width=0, stretch=tk.YES)
-                for col in filtered_columns:
-                    treeview.column(col, anchor=tk.W, width=100, stretch=tk.YES)
-                    treeview.heading(col, text=col, anchor=tk.W)
-                
-                # Add data to treeview
-                for idx, row in result_df.iterrows():
-                    values = [str(row[col]) for col in filtered_columns]
-                    treeview.insert("", tk.END, values=values)
-                
-                print(f"Transaction found in {file_name}")
-                status_label.configure(text=f"Transaction found in data from {current_date.strftime('%Y-%m-%d')}", text_color="green")
-                break
+                # Append the results to found transactions
+                result_df['Source_File'] = file_name  # Add source file name for tracking
+                found_transactions.append(result_df)
+                print(f"Transaction(s) found in {file_name}")
                 
         except Exception as e:
             unavailable_files.append(file_name)
@@ -279,12 +288,96 @@ def search_transaction(channel_var: tk.StringVar, from_date: ctk.CTkEntry, to_da
             
         current_date += timedelta(days=1)
     
-    if not found and not stop_event.is_set():
-        status_label.configure(text=f"Transaction ID '{transaction_id_value}' not found in the specified date range", text_color="red")
-        print("Transaction not found in any files within the date range")
+    # Combine all found transactions
+    if found_transactions:
+        complete_result_df = pd.concat(found_transactions, ignore_index=True)
+        
+        # Store the results in the global variable for download
+        search_results_df = complete_result_df
+        
+        # Get all columns from the dataframe
+        all_columns = list(complete_result_df.columns)
+        
+        # Filter to only include columns that are in display_columns
+        filtered_columns = [col for col in all_columns if col in display_columns]
+        
+        # If no columns match, fall back to all columns
+        if not filtered_columns:
+            filtered_columns = all_columns
+        
+        # Ensure 'Source_File' is included if not already in filtered columns
+        if 'Source_File' not in filtered_columns:
+            filtered_columns.append('Source_File')
+        
+        # Set the filtered columns to the treeview
+        treeview["columns"] = filtered_columns
+        
+        # Configure column display
+        treeview.column("#0", width=0, stretch=tk.NO)
+        for col in filtered_columns:
+            treeview.column(col, anchor=tk.W, width=100)
+            treeview.heading(col, text=col, anchor=tk.W)
+        
+        # Add data to treeview
+        for idx, row in complete_result_df.iterrows():
+            values = [str(row[col]) for col in filtered_columns]
+            treeview.insert("", tk.END, values=values)
+        
+        status_label.configure(
+            text=f"Found {len(complete_result_df)} transaction(s) for {len(transaction_ids_value)} searched ID(s)", 
+            text_color="green"
+        )
+        
+        # Enable download button since results are available
+        download_button.configure(state="normal")
+    else:
+        if not stop_event.is_set():
+            status_label.configure(
+                text=f"No transactions found for: {', '.join(transaction_ids_value)}", 
+                text_color="red"
+            )
+            print("No transactions found in any files within the date range")
+            # Disable download button since no results
+            download_button.configure(state="disabled")
+            # Reset the results dataframe
+            search_results_df = pd.DataFrame()
     
     if unavailable_files and not stop_event.is_set():
         print(f"Couldn't search in these files: {unavailable_files}")
+
+def download_search_results():
+    global search_results_df
+    
+    if search_results_df.empty:
+        messagebox.showinfo("DataQuery", "No search results to download.")
+        return
+    
+    # Create data directory if it doesn't exist
+    current_directory = os.getcwd()
+    data_dir = resource_path(f"{current_directory}\\data")
+    os.makedirs(data_dir, exist_ok=True)
+    
+    # Generate a filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"search_results_{timestamp}.csv"
+    file_path = os.path.join(data_dir, filename)
+    
+    # Save to CSV
+    try:
+        search_results_df.to_csv(file_path, index=False)
+        messagebox.showinfo("DataQuery", f"Results saved to {filename}")
+        
+        # Open the folder
+        folder_path = resource_path(f"{current_directory}\\data")
+        if platform.system() == "Windows":
+            os.startfile(folder_path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", folder_path])
+        else:
+            subprocess.Popen(["xdg-open", folder_path])
+            
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save results: {str(e)}")
 
 def main():
     def open_date_picker(date_entry: ctk.CTkEntry, root: ctk.CTk):
@@ -546,7 +639,7 @@ def main():
     tree_frame = Frame(tree_container, bg="white")
     tree_frame.pack(fill="both", expand=True)
     
-    # Create scrollbars
+    # Create horizontal and vertical scrollbars
     tree_scrollbar_y = ttk.Scrollbar(tree_frame, orient="vertical")
     tree_scrollbar_y.pack(side="right", fill="y")
     
@@ -565,10 +658,21 @@ def main():
     style.configure("Treeview", font=('Helvetica', 10), rowheight=25)
     style.configure("Treeview.Heading", font=('Helvetica', 10, 'bold'))
     
-    def search_thread(channel_var, from_entry, to_entry, transaction_entry, status_label, treeview):
+    # Create download button (initially disabled)
+    download_results_button = ctk.CTkButton(
+        search_button_frame, 
+        text="Download Results", 
+        command=download_search_results,
+        text_color="white", 
+        fg_color="green",
+        state="disabled"
+    )
+    download_results_button.pack(side="right", padx=10)
+    
+    def search_thread(channel_var, from_entry, to_entry, transaction_entry, status_label, treeview, download_button):
         stop_event.clear()
         threading.Thread(target=search_transaction, args=(
-            channel_var, from_entry, to_entry, transaction_entry, status_label, treeview
+            channel_var, from_entry, to_entry, transaction_entry, status_label, treeview, download_button
         )).start()
     
     # Search button
@@ -579,10 +683,11 @@ def main():
                                     search_to_entry, 
                                     transaction_entry,
                                     search_status_label,
-                                    search_treeview
+                                    search_treeview,
+                                    download_results_button
                                 ), 
                                 text_color="white", fg_color="green")
-    search_btn.pack(pady=5)
+    search_btn.pack(side="left", pady=5)
     
     # Show the download frame by default
     show_frame(download_frame)
