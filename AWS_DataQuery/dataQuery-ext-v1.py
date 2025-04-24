@@ -19,7 +19,7 @@ import re
 users = {"test-user1":"user-pass1",
          "test-user2":"user-pass2",
          "test-user3":"user-pass3",
-         "1":"1"
+         "1":"1",
 }
 
 
@@ -29,8 +29,8 @@ def validate_credentials(username,password ):
             try:
                 # Create a session with the credentials
                 session = boto3.Session(
-                    aws_access_key_id="some-id",
-                    aws_secret_access_key="some-key"
+                    aws_access_key_id="some - id",
+                    aws_secret_access_key="Some - key"
                 )
                 # Use S3 client to validate the credentials
                 s3 = session.client('s3')
